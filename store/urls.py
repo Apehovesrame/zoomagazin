@@ -23,6 +23,7 @@ urlpatterns = [
     path('profile/edit-pet/<int:pet_id>/', views.edit_pet, name='edit_pet'),
 
     path('manager/', views.manager_dashboard, name='manager_dashboard'),
+    path('manager/product/add/', views.add_product, name='add_product'),
 
     path('logout/', views.user_logout, name='logout'),
 

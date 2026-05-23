@@ -4,10 +4,11 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from .models import Product, OrderItem, Pet
-from .forms import CustomUserCreationForm, UserUpdateForm, OrderCreateForm, PetForm
+from .forms import CustomUserCreationForm, UserUpdateForm, OrderCreateForm, PetForm, ProductForm
 from django.contrib.auth import logout
 from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
+
 
 
 def index(request):
@@ -312,3 +313,18 @@ def manager_dashboard(request):
         'products': products
     }
     return render(request, 'store/manager_dashboard.html', context)
+
+@user_passes_test(is_store_admin, login_url='store:index')
+def add_product(request):
+    """Добавление нового товара администратором магазина"""
+    if request.method == 'POST':
+        # Обязательно передаем request.FILES для загрузки изображения товара
+        form = ProductForm(request.POST, request.FILES)
+        if form.is_valid():
+            product = form.save()
+            messages.success(request, f'Товар «{product.name}» успешно добавлен!')
+            return redirect('store:manager_dashboard')
+    else:
+        form = ProductForm()
+
+    return render(request, 'store/add_product.html', {'form': form})

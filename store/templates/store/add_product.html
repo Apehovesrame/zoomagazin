@@ -1,0 +1,78 @@
+{% extends 'store/base.html' %}
+{% block title %}Добавление товара{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-10">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">📦 Новый товар в каталог</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-6 border-end">
+                            <h5 class="text-muted mb-3">Основные характеристики</h5>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Название</label>
+                                {{ form.name }}
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Категория</label>
+                                {{ form.category }}
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Цена (руб.)</label>
+                                {{ form.price }}
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Изображение товара</label>
+                                {{ form.image }}
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Описание</label>
+                                {{ form.description }}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h5 class="text-muted mb-3">Критерии для Помощника подбора</h5>
+                            <p class="text-muted small">Оставьте поля пустыми, если товар универсальный и подходит всем животным.</p>
+
+                            <div class="mb-3">
+                                <label class="form-label">Вид животного (Кошка / Собака)</label>
+                                {{ form.target_species }}
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Возрастная группа</label>
+                                {{ form.target_age }}
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col">
+                                    <label class="form-label">Мин. вес (кг)</label>
+                                    {{ form.min_weight }}
+                                </div>
+                                <div class="col">
+                                    <label class="form-label">Макс. вес (кг)</label>
+                                    {{ form.max_weight }}
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Уровень активности питомца</label>
+                                {{ form.target_activity }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4 border-top pt-3">
+                        <a href="{% url 'store:manager_dashboard' %}" class="btn btn-outline-secondary">Назад в панель</a>
+                        <button type="submit" class="btn btn-success px-4">Опубликовать товар</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

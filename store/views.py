@@ -1,14 +1,12 @@
-from django.shortcuts import render, get_object_or_404
 from django.db.models import Q
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect
 from .models import Product, OrderItem, Pet
 from .forms import CustomUserCreationForm, UserUpdateForm, OrderCreateForm, PetForm, ProductForm
 from django.contrib.auth import logout
 from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
-
+from django.shortcuts import render, redirect, get_object_or_404
 
 
 def index(request):
@@ -333,3 +331,40 @@ def add_product(request):
         'form': form,
         'categories': categories
     })
+
+
+@user_passes_test(is_store_admin, login_url='store:index')
+def edit_product(request, product_id):
+    """Редактирование существующего товара"""
+    product = get_object_or_404(Product, id=product_id)
+
+    if request.method == 'POST':
+        # instance=product указывает, что мы обновляем запись, а не создаем новую
+        form = ProductForm(request.POST, request.FILES, instance=product)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Товар «{product.name}» успешно обновлен!')
+            return redirect('store:manager_dashboard')
+    else:
+        form = ProductForm(instance=product)
+
+    categories = Product.objects.values_list('category', flat=True).distinct()
+    return render(request, 'store/edit_product.html', {
+        'form': form,
+        'product': product,
+        'categories': categories
+    })
+
+
+@user_passes_test(is_store_admin, login_url='store:index')
+def delete_product(request, product_id):
+    """Удаление товара"""
+    product = get_object_or_404(Product, id=product_id)
+
+    if request.method == 'POST':
+        name = product.name
+        product.delete()
+        messages.success(request, f'Товар «{name}» был удален из каталога.')
+        return redirect('store:manager_dashboard')
+
+    return render(request, 'store/delete_product.html', {'product': product})

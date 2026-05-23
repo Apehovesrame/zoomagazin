@@ -24,6 +24,8 @@ urlpatterns = [
 
     path('manager/', views.manager_dashboard, name='manager_dashboard'),
     path('manager/product/add/', views.add_product, name='add_product'),
+    path('manager/product/edit/<int:product_id>/', views.edit_product, name='edit_product'),
+    path('manager/product/delete/<int:product_id>/', views.delete_product, name='delete_product'),
 
     path('logout/', views.user_logout, name='logout'),
 

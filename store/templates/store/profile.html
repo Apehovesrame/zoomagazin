@@ -72,17 +72,30 @@
                     <div class="row row-cols-1 row-cols-md-2 g-4">
                         {% for pet in pets %}
                         <div class="col">
-                            <div class="card h-100 border-0 shadow-sm product-card">
-                                <div class="card-body">
+                            <div class="card h-100 border-0 shadow-sm product-card position-relative">
+
+                                <a href="{% url 'store:edit_pet' pet.id %}" class="position-absolute top-0 end-0 m-2 btn btn-light btn-sm shadow-sm text-decoration-none" style="z-index: 10;" title="Редактировать">
+                                    ✏️
+                                </a>
+
+                                {% if pet.image %}
+                                    <img src="{{ pet.image.url }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{ pet.name }}">
+                                {% else %}
+                                    <div class="bg-light text-center border-bottom d-flex align-items-center justify-content-center" style="height: 200px;">
+                                        <span class="fs-1">🐾</span>
+                                    </div>
+                                {% endif %}
+
+                                <div class="card-body d-flex flex-column">
                                     <h5 class="card-title fw-bold text-primary">{{ pet.name }}</h5>
                                     <p class="card-text small mb-1"><strong>Вид:</strong> {{ pet.species }}</p>
                                     <p class="card-text small mb-1"><strong>Порода:</strong> {{ pet.breed }}</p>
                                     <p class="card-text small mb-1"><strong>Возраст:</strong> {{ pet.age_group }}</p>
-                                    <p class="card-text small mb-3"><strong>Вес:</strong> {{ pet.weight }} кг</p>
+                                    <p class="card-text small mb-1"><strong>Вес:</strong> {{ pet.weight }} кг</p>
                                     <p class="card-text small mb-3"><strong>Активность:</strong> {{ pet.activity_level }}</p>
 
-                                    <a href="{% url 'store:smart_catalog' pet.id %}" class="btn btn-sm btn-success w-100">
-                                        🎯 Подобрать корм
+                                    <a href="{% url 'store:smart_catalog' pet.id %}" class="btn btn-sm btn-success w-100 mt-auto">
+                                        🎯 Помощник по подбору корма
                                     </a>
                                 </div>
                             </div>

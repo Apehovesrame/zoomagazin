@@ -216,7 +216,7 @@ def order_create(request):
             # Очищаем корзину после успешного заказа
             request.session['cart'] = {}
 
-            messages.success(request, 'Заказ успешно оформлен! Мы свяжемся с вами в ближайшее время.')
+            messages.success(request, 'Заказ успешно оформлен!')
             return render(request, 'store/order_created.html', {'order': order})
     else:
         # Предзаполняем данные, если пользователь вошел в систему

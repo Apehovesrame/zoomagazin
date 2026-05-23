@@ -22,6 +22,13 @@
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Категория</label>
                                 {{ form.category }}
+
+                                <datalist id="category-list">
+                                    {% for cat in categories %}
+                                        {% if cat %} <option value="{{ cat }}">
+                                        {% endif %}
+                                    {% endfor %}
+                                </datalist>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Цена (руб.)</label>

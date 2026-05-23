@@ -327,4 +327,9 @@ def add_product(request):
     else:
         form = ProductForm()
 
-    return render(request, 'store/add_product.html', {'form': form})
+    categories = Product.objects.values_list('category', flat=True).distinct()
+
+    return render(request, 'store/add_product.html', {
+        'form': form,
+        'categories': categories
+    })

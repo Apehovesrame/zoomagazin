@@ -89,7 +89,11 @@ class ProductForm(forms.ModelForm):
         ]
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Название товара'}),
-            'category': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Например: Корма, Игрушки'}),
+            'category': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Начните вводить...',
+                'list': 'category-list' # Указываем ID списка подсказок
+            }),
             'price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'image': forms.FileInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Описание товара'}),

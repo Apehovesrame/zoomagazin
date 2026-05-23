@@ -22,6 +22,11 @@
                     </li>
 
                     {% if user.is_authenticated %}
+                    {% if user.role == 'admin' %}
+                    <li class="nav-item">
+                        <a class="nav-link text-success fw-bold" href="{% url 'store:manager_dashboard' %}">Управление</a>
+                    </li>
+                    {% endif %}
                     <li class="nav-item">
                         <a class="nav-link text-warning fw-bold" href="{% url 'store:profile' %}">Профиль</a>
                     </li>

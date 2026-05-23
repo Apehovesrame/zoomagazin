@@ -7,6 +7,7 @@ from .models import Product, OrderItem, Pet
 from .forms import CustomUserCreationForm, UserUpdateForm, OrderCreateForm, PetForm
 from django.contrib.auth import logout
 from django.contrib import messages
+from django.contrib.auth.decorators import user_passes_test
 
 
 def index(request):
@@ -293,3 +294,21 @@ def smart_catalog(request, pet_id):
         'is_filtered': True  # Используем твой флаг для красивого отображения
     }
     return render(request, 'store/catalog.html', context)
+
+
+# Проверяем, является ли пользователь администратором магазина
+def is_store_admin(user):
+    return user.is_authenticated and user.role == 'admin'
+
+
+# Защищаем страницу: пустит только тех, кто прошел проверку is_store_admin
+@user_passes_test(is_store_admin, login_url='store:index')
+def manager_dashboard(request):
+    """Главная страница панели управления магазином"""
+    # Получаем все товары, чтобы вывести их в таблицу
+    products = Product.objects.all().order_by('-id')
+
+    context = {
+        'products': products
+    }
+    return render(request, 'store/manager_dashboard.html', context)

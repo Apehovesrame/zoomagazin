@@ -45,3 +45,14 @@ class PetForm(forms.ModelForm):
             'weight': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
             'activity_level': forms.Select(attrs={'class': 'form-select'}),
         }
+
+class UserUpdateForm(forms.ModelForm):
+    class Meta:
+        model = CustomUser
+        fields = ['first_name', 'last_name', 'email', 'avatar']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Имя'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Фамилия'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email'}),
+            'avatar': forms.FileInput(attrs={'class': 'form-control'}),
+        }

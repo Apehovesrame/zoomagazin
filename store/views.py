@@ -99,6 +99,21 @@ def profile(request):
     return render(request, 'store/profile.html', context)
 
 
+@login_required
+def edit_profile(request):
+    """Редактирование личных данных пользователя"""
+    if request.method == 'POST':
+        # Передаем request.FILES для загрузки аватарки!
+        form = UserUpdateForm(request.POST, request.FILES, instance=request.user)
+        if form.is_valid():
+            form.save()
+            return redirect('store:profile')
+    else:
+        # Предзаполняем форму текущими данными
+        form = UserUpdateForm(instance=request.user)
+
+    return render(request, 'store/edit_profile.html', {'form': form})
+
 def add_to_cart(request, product_id):
     """Добавление товара в корзину (с учетом указанного количества)"""
     cart = request.session.get('cart', {})

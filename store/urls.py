@@ -13,6 +13,8 @@ urlpatterns = [
     path('register/', views.register, name='register'),
     path('profile/', views.profile, name='profile'),
 
+    path('profile/edit/', views.edit_profile, name='edit_profile'),
+
     path('checkout/', views.order_create, name='order_create'),
 
     path('profile/add-pet/', views.add_pet, name='add_pet'),

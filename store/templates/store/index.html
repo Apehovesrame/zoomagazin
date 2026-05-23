@@ -1,49 +1,109 @@
 {% extends 'store/base.html' %}
+{% block title %}Зоомагазин - Главная{% endblock %}
 
 {% block content %}
-<div class="row align-items-center">
-    <div class="col-md-6">
-        <h1 class="display-4 fw-bold">Умный подбор корма</h1>
-        <p class="lead">Ответьте на 4 вопроса, и мы подберем идеальный рацион для вашего любимца из нашего каталога.</p>
-    </div>
-    <div class="col-md-6">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <form action="{% url 'store:catalog' %}" method="GET">
-                    <div class="mb-3">
-                        <label class="form-label">Вид питомца</label>
-                        <select name="species" class="form-select">
-                            <option value="">Не важно</option>
-                            <option value="Кошка">Кошка</option>
-                            <option value="Собака">Собака</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Возраст</label>
-                        <select name="age" class="form-select">
-                            <option value="">Не важно</option>
-                            <option value="Щенок/Котенок">Щенок/Котенок</option>
-                            <option value="Взрослый">Взрослый</option>
-                            <option value="Пожилой">Пожилой</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Вес питомца (кг)</label>
-                        <input type="number" step="0.1" name="weight" class="form-control" placeholder="Например: 4.5">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Уровень активности</label>
-                        <select name="activity" class="form-select">
-                            <option value="">Не важно</option>
-                            <option value="Низкая">Низкая (домосед)</option>
-                            <option value="Средняя">Средняя (гуляет каждый день)</option>
-                            <option value="Высокая">Высокая (очень активный)</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">Подобрать корм</button>
-                </form>
-            </div>
+<div class="p-5 mb-5 bg-light rounded-3 shadow-sm border text-center" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+    <div class="container-fluid py-4">
+        <h1 class="display-5 fw-bold text-primary mb-3">Добро пожаловать в Зоомагазин! 🐾</h1>
+        <p class="col-md-8 mx-auto fs-5 text-muted mb-4">
+            Лучшие корма, игрушки и аксессуары для ваших пушистых друзей.
+            Создайте профиль питомца, и мы автоматически подберем для него идеальный рацион.
+        </p>
+        <div class="d-flex justify-content-center gap-3">
+            <a href="{% url 'store:catalog' %}" class="btn btn-primary btn-lg px-4 shadow-sm">Каталог</a>
+
+            <button type="button" class="btn btn-warning btn-lg px-4 shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#smartMatchModal">
+                🪄 Помощник по подбору
+            </button>
+
+            {% if not user.is_authenticated %}
+                <a href="{% url 'store:register' %}" class="btn btn-outline-success btn-lg px-4 shadow-sm">Регистрация</a>
+            {% else %}
+                <a href="{% url 'store:profile' %}" class="btn btn-success btn-lg px-4 shadow-sm">Мои питомцы</a>
+            {% endif %}
         </div>
     </div>
+</div>
+
+<div class="container mb-5">
+    <div class="d-flex justify-content-between align-items-end mb-4">
+        <h3 class="fw-bold mb-0">Новинки каталога</h3>
+        <a href="{% url 'store:catalog' %}" class="text-decoration-none fw-bold">Смотреть всё →</a>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for product in latest_products %}
+        <div class="col">
+            <div class="card h-100 shadow-sm border-0 product-card">
+                <a href="{% url 'store:product_detail' product.id %}" class="text-decoration-none text-dark">
+                    {% if product.image %}
+                        <img src="{{ product.image.url }}" class="card-img-top p-3" style="height: 250px; object-fit: contain;" alt="{{ product.name }}">
+                    {% else %}
+                        <div class="bg-light d-flex align-items-center justify-content-center border-bottom" style="height: 250px;">
+                            <span class="fs-1">📦</span>
+                        </div>
+                    {% endif %}
+                    <div class="card-body text-center">
+                        <span class="badge bg-light text-dark mb-2 border">{{ product.category }}</span>
+                        <h5 class="card-title fw-bold text-primary">{{ product.name }}</h5>
+                        <h5 class="fw-bold mt-2">{{ product.price }} руб.</h5>
+                    </div>
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-4">
+            <p class="text-muted">Новинок пока нет.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+<div class="modal fade" id="smartMatchModal" tabindex="-1" aria-labelledby="smartMatchModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title fw-bold" id="smartMatchModalLabel">🪄 Помощник по подбору</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <form action="{% url 'store:catalog' %}" method="get">
+          <div class="modal-body p-4">
+              <p class="text-muted small mb-4">Укажите данные питомца, и мы отфильтруем для него подходящие товары.</p>
+
+              <div class="mb-3">
+                  <label class="form-label fw-bold">Что ищем?</label>
+                  <select name="category" class="form-select">
+                      <option value="">Всё подряд</option>
+                      <option value="Корма">Корма</option>
+                      <option value="Игрушки">Игрушки</option>
+                      <option value="Аксессуары">Аксессуары</option>
+                  </select>
+              </div>
+
+              <div class="mb-3">
+                  <label class="form-label fw-bold">Вид животного</label>
+                  <select name="species" class="form-select">
+                      <option value="">Для всех</option>
+                      <option value="Кошка">Кошка</option>
+                      <option value="Собака">Собака</option>
+                  </select>
+              </div>
+
+              <div class="mb-3">
+                  <label class="form-label fw-bold">Возраст питомца</label>
+                  <select name="age" class="form-select">
+                      <option value="">Любой</option>
+                      <option value="Щенок/Котенок">Щенок/Котенок</option>
+                      <option value="Взрослый">Взрослый</option>
+                      <option value="Пожилой">Пожилой</option>
+                  </select>
+              </div>
+          </div>
+          <div class="modal-footer bg-light border-0">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+            <button type="submit" class="btn btn-success px-4 fw-bold">Подобрать товары</button>
+          </div>
+      </form>
+    </div>
+  </div>
 </div>
 {% endblock %}

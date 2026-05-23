@@ -5,14 +5,45 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>Каталог товаров</h2>
-    {% if is_filtered %}
-        <span class="badge bg-success fs-6">✨ Подобрано по параметрам питомца</span>
-        <a href="{% url 'store:catalog' %}" class="btn btn-outline-secondary btn-sm ms-2">Сбросить фильтр</a>
-    {% endif %}
+
+    <form method="get" class="d-flex" style="max-width: 400px; width: 100%;">
+        <input type="text" name="q" class="form-control me-2" placeholder="Поиск по названию..." value="{{ query|default_if_none:'' }}">
+        <button type="submit" class="btn btn-outline-primary">Найти</button>
+        {% if query %}
+            <a href="{% url 'store:catalog' %}" class="btn btn-outline-secondary ms-2" title="Сбросить поиск">✖</a>
+        {% endif %}
+    </form>
 </div>
 
-<div class="row row-cols-1 row-cols-md-3 g-4">
-    {% for product in products %}
+<div class="d-flex flex-wrap gap-2 mb-4 border-bottom pb-3">
+    <a href="{% url 'store:catalog' %}" class="btn btn-sm rounded-pill {% if not selected_category %}btn-primary{% else %}btn-outline-primary{% endif %}">
+        Все товары
+    </a>
+    {% for cat in categories %}
+        <a href="?category={{ cat }}" class="btn btn-sm rounded-pill {% if selected_category == cat %}btn-primary{% else %}btn-outline-primary{% endif %}">
+            {{ cat }}
+        </a>
+    {% endfor %}
+</div>
+
+{% if is_filtered or active_pet %}
+<div class="alert alert-success shadow-sm mb-4 border-0">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            {% if active_pet %}
+                <h5 class="alert-heading mb-1 fw-bold">🎯 Идеальный рацион для: {{ active_pet.name }}</h5>
+                <p class="mb-0 small">Мы отфильтровали каталог с учетом вида, возраста и веса.</p>
+            {% else %}
+                <h5 class="alert-heading mb-0 fw-bold">✨ Подобрано по параметрам</h5>
+            {% endif %}
+        </div>
+        <a href="{% url 'store:catalog' %}" class="btn btn-sm btn-outline-success bg-white">Сбросить фильтр</a>
+    </div>
+</div>
+{% endif %}
+
+<div class="row row-cols-1 row-cols-md-3 g-4 mb-5">
+    {% for product in page_obj %}
         <div class="col">
         <a href="{% url 'store:product_detail' product.id %}" class="text-decoration-none text-dark h-100 d-block">
             <div class="card h-100 shadow-sm border-0 product-card">
@@ -42,4 +73,37 @@
     </div>
     {% endfor %}
 </div>
+
+{% if page_obj.has_other_pages %}
+<nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}">Назад</a>
+            </li>
+        {% else %}
+            <li class="page-item disabled"><span class="page-link">Назад</span></li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% else %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}">{{ num }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}">Вперед</a>
+            </li>
+        {% else %}
+            <li class="page-item disabled"><span class="page-link">Вперед</span></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
 {% endblock %}

@@ -7,11 +7,14 @@ from django.contrib.auth import logout
 from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
 from django.shortcuts import render, redirect, get_object_or_404
+from django.core.paginator import Paginator
 
 
 def index(request):
-    """Главная страница магазина (здесь будет форма помощника)"""
-    return render(request, 'store/index.html')
+    """Главная страница магазина"""
+    # Берем 3 последних добавленных товара для блока "Новинки"
+    latest_products = Product.objects.all().order_by('-id')[:3]
+    return render(request, 'store/index.html', {'latest_products': latest_products})
 
 def user_logout(request):
     """Выход пользователя из системы"""
@@ -19,52 +22,56 @@ def user_logout(request):
     return redirect('store:index')
 
 def catalog(request):
-    """Каталог товаров и логика алгоритма подбора корма"""
-    # Изначально берем все товары из базы
-    products = Product.objects.all()
+    """Каталог товаров с поиском, категориями и умным подбором"""
+    products = Product.objects.all().order_by('-id')
 
-    # Считываем параметры из формы Помощника (если пользователь её заполнил)
+    # Получаем список уникальных категорий (исключая пустые)
+    categories = Product.objects.exclude(category__isnull=True).exclude(category__exact='').values_list('category', flat=True).distinct()
+
+    # 1. Фильтр по подкатегории (клики по кнопкам-таблеткам)
+    selected_category = request.GET.get('category')
+    if selected_category:
+        products = products.filter(category=selected_category)
+
+    # 2. Текстовый поиск по названию
+    query = request.GET.get('q')
+    if query:
+        products = products.filter(Q(name__icontains=query))
+
+    # 3. Алгоритм Умного подбора
     species = request.GET.get('species')
     age = request.GET.get('age')
     weight = request.GET.get('weight')
     activity = request.GET.get('activity')
 
-    # Если хотя бы один параметр передан — запускаем алгоритм подбора
     if species or age or weight or activity:
-        # Ищем только в категории "Корма"
-        products = products.filter(category='Корма')
-
-        # 1. Фильтр по виду (совпадает ИЛИ товар универсальный)
+        # Убрали ограничение "только Корма", теперь ищем по всем товарам!
         if species:
-            products = products.filter(
-                Q(target_species=species) | Q(target_species__isnull=True) | Q(target_species=''))
-
-        # 2. Фильтр по возрасту
+            products = products.filter(Q(target_species=species) | Q(target_species__isnull=True) | Q(target_species=''))
         if age:
             products = products.filter(Q(target_age=age) | Q(target_age__isnull=True) | Q(target_age=''))
-
-        # 3. Фильтр по активности
         if activity:
-            products = products.filter(
-                Q(target_activity=activity) | Q(target_activity__isnull=True) | Q(target_activity=''))
-
-        # 4. Фильтр по весу питомца
+            products = products.filter(Q(target_activity=activity) | Q(target_activity__isnull=True) | Q(target_activity=''))
         if weight:
             try:
                 w = float(weight.replace(',', '.'))
-                # Подходит, если вес питомца больше минимального (или мин. не задан)
-                # И меньше максимального (или макс. не задан)
                 products = products.filter(
                     (Q(min_weight__isnull=True) | Q(min_weight__lte=w)) &
                     (Q(max_weight__isnull=True) | Q(max_weight__gte=w))
                 )
             except ValueError:
-                pass  # Если ввели не число, игнорируем вес
+                pass
+
+    paginator = Paginator(products, 9)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
     context = {
-        'products': products,
+        'page_obj': page_obj,
+        'query': query,
+        'categories': categories,
+        'selected_category': selected_category,
         'is_filtered': bool(species or age or weight or activity)
-        # Флаг, чтобы показать сообщение "Вот что мы подобрали"
     }
     return render(request, 'store/catalog.html', context)
 
@@ -268,13 +275,10 @@ def edit_pet(request, pet_id):
 @login_required
 def smart_catalog(request, pet_id):
     """Каталог, отфильтрованный под конкретного питомца (Умный подбор)"""
-    # Ищем питомца, убеждаясь, что он принадлежит именно этому пользователю
     pet = get_object_or_404(Pet, id=pet_id, user=request.user)
 
-    # Изначально берем все товары из категории "Корма"
-    products = Product.objects.filter(category='Корма')
+    products = Product.objects.filter(category='Корма').order_by('-id')
 
-    # Алгоритм подбора: ищем товары, где параметры совпадают или не указаны (универсальные)
     products = products.filter(
         Q(target_species=pet.species) | Q(target_species__isnull=True) | Q(target_species='')
     ).filter(
@@ -287,10 +291,15 @@ def smart_catalog(request, pet_id):
         Q(target_activity=pet.activity_level) | Q(target_activity__isnull=True) | Q(target_activity='')
     )
 
+    # ДОБАВИЛИ ПАГИНАЦИЮ И СЮДА ТОЖЕ
+    paginator = Paginator(products, 9)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     context = {
-        'products': products,
-        'active_pet': pet,  # Передаем питомца, чтобы написать "Корм для Барсика"
-        'is_filtered': True  # Используем твой флаг для красивого отображения
+        'page_obj': page_obj,  # Теперь передаем page_obj, как и требует шаблон
+        'active_pet': pet,
+        'is_filtered': True
     }
     return render(request, 'store/catalog.html', context)
 

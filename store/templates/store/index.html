@@ -1,0 +1,49 @@
+{% extends 'store/base.html' %}
+
+{% block content %}
+<div class="row align-items-center">
+    <div class="col-md-6">
+        <h1 class="display-4 fw-bold">Умный подбор корма</h1>
+        <p class="lead">Ответьте на 4 вопроса, и мы подберем идеальный рацион для вашего любимца из нашего каталога.</p>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form action="{% url 'store:catalog' %}" method="GET">
+                    <div class="mb-3">
+                        <label class="form-label">Вид питомца</label>
+                        <select name="species" class="form-select">
+                            <option value="">Не важно</option>
+                            <option value="Кошка">Кошка</option>
+                            <option value="Собака">Собака</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Возраст</label>
+                        <select name="age" class="form-select">
+                            <option value="">Не важно</option>
+                            <option value="Щенок/Котенок">Щенок/Котенок</option>
+                            <option value="Взрослый">Взрослый</option>
+                            <option value="Пожилой">Пожилой</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Вес питомца (кг)</label>
+                        <input type="number" step="0.1" name="weight" class="form-control" placeholder="Например: 4.5">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Уровень активности</label>
+                        <select name="activity" class="form-select">
+                            <option value="">Не важно</option>
+                            <option value="Низкая">Низкая (домосед)</option>
+                            <option value="Средняя">Средняя (гуляет каждый день)</option>
+                            <option value="Высокая">Высокая (очень активный)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Подобрать корм</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

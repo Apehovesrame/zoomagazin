@@ -1,0 +1,45 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Каталог товаров - Зоомагазин{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Каталог товаров</h2>
+    {% if is_filtered %}
+        <span class="badge bg-success fs-6">✨ Подобрано по параметрам питомца</span>
+        <a href="{% url 'store:catalog' %}" class="btn btn-outline-secondary btn-sm ms-2">Сбросить фильтр</a>
+    {% endif %}
+</div>
+
+<div class="row row-cols-1 row-cols-md-3 g-4">
+    {% for product in products %}
+        <div class="col">
+        <a href="{% url 'store:product_detail' product.id %}" class="text-decoration-none text-dark h-100 d-block">
+            <div class="card h-100 shadow-sm border-0 product-card">
+                {% if product.image %}
+                    <img src="{{ product.image.url }}" class="card-img-top p-3" alt="{{ product.name }}" style="height: 200px; object-fit: contain;">
+                {% else %}
+                    <div class="bg-light d-flex align-items-center justify-content-center border-bottom" style="height: 200px;">
+                        <span class="text-muted fs-5">Нет фото</span>
+                    </div>
+                {% endif %}
+
+                <div class="card-body">
+                    <span class="badge bg-info mb-2">{{ product.category }}</span>
+                    <h5 class="card-title fw-bold">{{ product.name }}</h5>
+                    <p class="card-text text-muted small">{{ product.description|truncatechars:60 }}</p>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <h4 class="text-primary mb-0">{{ product.price }} руб.</h4>
+                        <span class="text-muted">→</span>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-warning">Товары по вашему запросу не найдены.</div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

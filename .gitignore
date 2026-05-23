@@ -1,0 +1,16 @@
+# Виртуальное окружение
+.venv/
+venv/
+env/
+
+# База данных
+*.sqlite3
+
+# Кэш Python и PyCharm
+__pycache__/
+*.py[cod]
+*$py.class
+.idea/
+
+# Медиафайлы (картинки загруженные пользователями)
+media/

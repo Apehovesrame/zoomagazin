@@ -1,0 +1,95 @@
+{% extends 'store/base.html' %}
+
+{% block title %}{{ product.name }} - Зоомагазин{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'store:index' %}">Главная</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'store:catalog' %}">Каталог</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ product.name }}</li>
+  </ol>
+</nav>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+    {% if product.image %}
+        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="img-fluid rounded shadow-sm bg-white p-3" style="max-height: 500px; object-fit: contain; width: 100%;">
+    {% else %}
+        <div class="bg-light d-flex align-items-center justify-content-center border rounded" style="height: 400px;">
+            <span class="text-muted fs-4">Нет фото</span>
+        </div>
+    {% endif %}
+</div>
+    <div class="col-md-6">
+        <span class="badge bg-secondary mb-2">{{ product.category }}</span>
+        <h1 class="mb-3">{{ product.name }}</h1>
+        <h2 class="text-primary mb-4">{{ product.price }} руб.</h2>
+
+        <!--<p class="lead">{{ product.description }}</p>-->
+
+        <div class="product-description-wrapper mb-4">
+            <h5 class="fw-bold">Описание товара</h5>
+
+            <div class="collapse" id="descriptionCollapse" aria-expanded="false">
+                <p class="lead" style="font-size: 1rem; line-height: 1.6;">
+                    {{ product.description }}
+                </p>
+            </div>
+
+            <button class="btn btn-link p-0 text-decoration-none fw-bold"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#descriptionCollapse"
+                    aria-expanded="false"
+                    aria-controls="descriptionCollapse"
+                    id="collapseButton">
+                Развернуть описание ↓
+            </button>
+        </div>
+
+        <script>
+            // Скрипт для смены текста на кнопке (Развернуть/Свернуть)
+            const collapseElement = document.getElementById('descriptionCollapse');
+            const collapseButton = document.getElementById('collapseButton');
+
+            collapseElement.addEventListener('show.bs.collapse', () => {
+                collapseButton.innerHTML = 'Свернуть ↑';
+            });
+
+            collapseElement.addEventListener('hide.bs.collapse', () => {
+                collapseButton.innerHTML = 'Развернуть описание ↓';
+            });
+        </script>
+
+
+        {% if product.category == 'Корма' %}
+        <ul class="list-group list-group-flush mb-4">
+            <li class="list-group-item"><strong>Для кого:</strong> {{ product.target_species|default:"Универсальный" }}</li>
+            <li class="list-group-item"><strong>Возраст:</strong> {{ product.target_age|default:"Любой" }}</li>
+            <li class="list-group-item"><strong>Вес питомца:</strong>
+                {% if product.min_weight and product.max_weight %}
+                    от {{ product.min_weight }} до {{ product.max_weight }} кг
+                {% elif product.min_weight %}
+                    от {{ product.min_weight }} кг
+                {% elif product.max_weight %}
+                    до {{ product.max_weight }} кг
+                {% else %}
+                    Для любого веса
+                {% endif %}
+            </li>
+            <li class="list-group-item"><strong>Активность:</strong> {{ product.target_activity|default:"Любая" }}</li>
+        </ul>
+        {% endif %}
+
+        <form action="{% url 'store:add_to_cart' product.id %}" method="POST" class="d-flex align-items-center mt-4">
+            {% csrf_token %}
+            <div class="input-group input-group-lg w-100">
+                <span class="input-group-text">Кол-во:</span>
+                <input type="number" name="quantity" value="1" min="1" class="form-control text-center" style="max-width: 100px;">
+                <button type="submit" class="btn btn-success flex-grow-1">🛒 Добавить в корзину</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Заказ оформлен - Зоомагазин{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-8 text-center">
+        <div class="card shadow border-0">
+            <div class="card-body py-5">
+                <div class="display-1 text-success mb-4">✔️</div>
+                <h2 class="fw-bold">Спасибо за заказ!</h2>
+                <p class="lead text-muted mt-3">
+                    Ваш заказ **№{{ order.id }}** успешно оформлен. <br>
+                    Мы отправили подтверждение на вашу почту **{{ order.email }}**.
+                </p>
+                <hr class="my-4 w-50 mx-auto">
+                <p>Наш менеджер свяжется с вами в ближайшее время для уточнения деталей доставки.</p>
+                <a href="{% url 'store:catalog' %}" class="btn btn-primary btn-lg mt-3">Вернуться за покупками</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

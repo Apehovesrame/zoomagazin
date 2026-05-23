@@ -6,6 +6,7 @@ from django.shortcuts import redirect
 from .models import Product, OrderItem, Pet
 from .forms import CustomUserCreationForm, UserUpdateForm, OrderCreateForm, PetForm
 from django.contrib.auth import logout
+from django.contrib import messages
 
 
 def index(request):
@@ -107,6 +108,7 @@ def edit_profile(request):
         form = UserUpdateForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
             form.save()
+            messages.success(request, 'Ваш профиль успешно обновлен!')
             return redirect('store:profile')
     else:
         # Предзаполняем форму текущими данными
@@ -214,6 +216,7 @@ def order_create(request):
             # Очищаем корзину после успешного заказа
             request.session['cart'] = {}
 
+            messages.success(request, 'Заказ успешно оформлен! Мы свяжемся с вами в ближайшее время.')
             return render(request, 'store/order_created.html', {'order': order})
     else:
         # Предзаполняем данные, если пользователь вошел в систему
@@ -238,6 +241,7 @@ def add_pet(request):
             pet = form.save(commit=False)
             pet.user = request.user
             pet.save()
+            messages.success(request, f'Питомец {pet.name} успешно добавлен в ваш профиль!')
             return redirect('store:profile')
     else:
         form = PetForm()

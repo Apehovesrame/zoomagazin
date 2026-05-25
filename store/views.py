@@ -8,6 +8,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
 from django.shortcuts import render, redirect, get_object_or_404
 from django.core.paginator import Paginator
+from .models import Order
+from django.views.decorators.http import require_POST
 
 
 def index(request):
@@ -377,3 +379,33 @@ def delete_product(request, product_id):
         return redirect('store:manager_dashboard')
 
     return render(request, 'store/delete_product.html', {'product': product})
+
+
+@user_passes_test(is_store_admin, login_url='store:index')
+def manager_orders(request):
+    """Страница управления заказами для администратора"""
+    orders = Order.objects.all().order_by('-created_at')
+    status_choices = Order.STATUS_CHOICES
+
+    return render(request, 'store/manager_orders.html', {
+        'orders': orders,
+        'status_choices': status_choices
+    })
+
+
+@require_POST
+@user_passes_test(is_store_admin, login_url='store:index')
+def change_order_status(request, order_id):
+    """Быстрое изменение статуса заказа менеджером"""
+    order = get_object_or_404(Order, id=order_id)
+    new_status = request.POST.get('status')
+
+    valid_statuses = [choice[0] for choice in Order.STATUS_CHOICES]
+    if new_status in valid_statuses:
+        order.status = new_status
+        order.save()
+        messages.success(request, f'Статус заказа №{order.id} успешно изменен на «{new_status}»')
+    else:
+        messages.error(request, 'Ошибка: выбран неверный статус.')
+
+    return redirect('store:manager_orders')

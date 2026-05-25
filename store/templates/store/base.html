@@ -23,8 +23,14 @@
 
                     {% if user.is_authenticated %}
                     {% if user.role == 'admin' %}
-                    <li class="nav-item">
-                        <a class="nav-link text-success fw-bold" href="{% url 'store:manager_dashboard' %}">Управление</a>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-success fw-bold" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            ⚙️ Админ-панель
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="adminDropdown">
+                            <li><a class="dropdown-item" href="{% url 'store:manager_dashboard' %}">Товары</a></li>
+                            <li><a class="dropdown-item" href="{% url 'store:manager_orders' %}">Заказы</a></li>
+                        </ul>
                     </li>
                     {% endif %}
                     <li class="nav-item">

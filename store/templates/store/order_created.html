@@ -1,21 +1,35 @@
 {% extends 'store/base.html' %}
-
-{% block title %}Заказ оформлен - Зоомагазин{% endblock %}
+{% block title %}Заказ успешно оформлен - Зоомагазин{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center mt-5">
+<div class="row justify-content-center mt-5 mb-5">
     <div class="col-md-8 text-center">
-        <div class="card shadow border-0">
-            <div class="card-body py-5">
-                <div class="display-1 text-success mb-4">✔️</div>
-                <h2 class="fw-bold">Спасибо за заказ!</h2>
-                <p class="lead text-muted mt-3">
-                    Ваш заказ **№{{ order.id }}** успешно оформлен. <br>
-                    Мы отправили подтверждение на вашу почту **{{ order.email }}**.
+        <div class="card shadow-sm border-0 py-5">
+            <div class="card-body">
+                <div class="display-1 text-success mb-3">✅</div>
+                <h1 class="fw-bold mb-3">Спасибо за ваш заказ!</h1>
+
+                <p class="fs-5 text-muted mb-4">
+                    Ваш заказ <strong>№{{ order.id }}</strong> успешно сформирован и передан в обработку.
                 </p>
-                <hr class="my-4 w-50 mx-auto">
-                <p>Наш менеджер свяжется с вами в ближайшее время для уточнения деталей доставки.</p>
-                <a href="{% url 'store:catalog' %}" class="btn btn-primary btn-lg mt-3">Вернуться за покупками</a>
+
+                <div class="alert alert-light border mx-auto mb-4 text-start" style="max-width: 400px;">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><strong>Имя получателя:</strong> {{ order.first_name }} {{ order.last_name }}</li>
+                        <li><strong>Email:</strong> {{ order.email }}</li>
+                    </ul>
+                </div>
+
+                <p class="text-muted small mb-5">
+                    Мы отправили письмо с деталями заказа на вашу почту. В ближайшее время с вами свяжется наш менеджер для уточнения времени доставки.
+                </p>
+
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="{% url 'store:catalog' %}" class="btn btn-primary px-4 shadow-sm">Вернуться в каталог</a>
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'store:profile' %}" class="btn btn-outline-success px-4 shadow-sm">В личный кабинет</a>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>

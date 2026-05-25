@@ -12,7 +12,6 @@ from .models import Order
 from django.views.decorators.http import require_POST
 import re
 from .models import Post, Comment, Tag
-from .forms import PostForm, CommentForm
 from django.db.models import Avg, Q
 from .forms import CustomUserCreationForm, UserUpdateForm, OrderCreateForm, PetForm, ProductForm, PostForm, CommentForm, ReviewForm
 
@@ -531,3 +530,44 @@ def delete_product_image(request, image_id):
     image.delete()
     messages.success(request, 'Фотография удалена.')
     return redirect('store:edit_product', product_id=product_id)
+
+
+@login_required
+def edit_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+
+    # Защита: редактировать может ТОЛЬКО автор
+    if post.author != request.user:
+        messages.error(request, "У вас нет прав для редактирования этого поста.")
+        return redirect('store:community')
+
+    if request.method == 'POST':
+        form = PostForm(request.POST, instance=post)
+        if form.is_valid():
+            form.save()
+
+            # Сохранение новых фото в галерею
+            files = request.FILES.getlist('images_input')
+            for f in files:
+                ImageGallery.objects.create(post=post, image=f)
+
+            messages.success(request, "Пост успешно обновлен!")
+            return redirect('store:community')
+    else:
+        form = PostForm(instance=post)
+
+    return render(request, 'store/edit_post.html', {'form': form, 'post': post})
+
+
+@login_required
+def delete_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+
+    # Защита: удалить может АВТОР или АДМИНИСТРАТОР
+    if post.author == request.user or request.user.is_staff:
+        post.delete()
+        messages.success(request, "Пост успешно удален.")
+    else:
+        messages.error(request, "У вас нет прав для удаления этого поста.")
+
+    return redirect('store:community')

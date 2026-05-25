@@ -62,11 +62,30 @@
                 </div>
 
                 {% if post.pet %}
-                <div class="text-end ms-3">
-                    <span class="badge bg-warning text-dark border p-2">
-                        🐾 Питомец: {{ post.pet.name }}
+                    <span class="badge bg-warning text-dark border p-2 me-2">
+                        🐾 {{ post.pet.name }}
                     </span>
-                </div>
+                {% endif %}
+
+                {% if request.user == post.author or request.user.is_staff %}
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-light border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="fs-5">⋮</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                            {% if request.user == post.author %}
+                                <li><a class="dropdown-item" href="{% url 'store:edit_post' post.id %}">✏️ Редактировать</a></li>
+                            {% endif %}
+                            <li>
+                                <form action="{% url 'store:delete_post' post.id %}" method="post" class="m-0 p-0">
+                                    {% csrf_token %}
+                                    <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Вы уверены, что хотите удалить этот пост?');">
+                                        🗑 Удалить
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
                 {% endif %}
             </div>
 

@@ -33,7 +33,8 @@ urlpatterns = [
     path('community/', views.community, name='community'),
     path('community/like/<int:post_id>/', views.like_post, name='like_post'),
     path('community/comment/<int:post_id>/', views.add_comment, name='add_comment'),
-
+    path('community/edit/<int:post_id>/', views.edit_post, name='edit_post'),
+    path('community/delete/<int:post_id>/', views.delete_post, name='delete_post'),
 
     path('logout/', views.user_logout, name='logout'),
 

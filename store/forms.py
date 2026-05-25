@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from .models import CustomUser
 from .models import Order
-from .models import Product, OrderItem, Pet, Post, Comment
+from .models import Product, OrderItem, Pet, Post, Comment, Review
 
 class CustomUserCreationForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
@@ -139,5 +139,25 @@ class CommentForm(forms.ModelForm):
                 'class': 'form-control',
                 'rows': 2,
                 'placeholder': 'Написать комментарий...'
+            }),
+        }
+
+class ReviewForm(forms.ModelForm):
+    class Meta:
+        model = Review
+        fields = ['rating', 'text']
+        widgets = {
+            # Делаем красивый выпадающий список со звездами
+            'rating': forms.Select(choices=[
+                (5, '5 ⭐⭐⭐⭐⭐ - Отлично'),
+                (4, '4 ⭐⭐⭐⭐ - Хорошо'),
+                (3, '3 ⭐⭐⭐ - Нормально'),
+                (2, '2 ⭐⭐ - Плохо'),
+                (1, '1 ⭐ - Ужасно')
+            ], attrs={'class': 'form-select mb-3'}),
+            'text': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Поделитесь впечатлениями о товаре. Что понравилось, а что нет?'
             }),
         }

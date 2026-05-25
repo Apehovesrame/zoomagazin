@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 # 1. ПОЛЬЗОВАТЕЛИ (Расширяем стандартную модель Django)
@@ -182,3 +183,18 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"Комментарий от {self.author.username} к посту №{self.post.id}"
+
+class Review(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews', verbose_name='Товар')
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, verbose_name='Покупатель')
+    rating = models.PositiveSmallIntegerField('Оценка', validators=[MinValueValidator(1), MaxValueValidator(5)])
+    text = models.TextField('Отзыв', max_length=1000)
+    created_at = models.DateTimeField('Дата создания', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Отзыв'
+        verbose_name_plural = 'Отзывы'
+        ordering = ['-created_at'] # Новые отзывы всегда сверху
+
+    def __str__(self):
+        return f"Отзыв от {self.user.username} на {self.product.name} ({self.rating} звезд)"

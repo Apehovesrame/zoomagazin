@@ -13,6 +13,8 @@ from django.views.decorators.http import require_POST
 import re
 from .models import Post, Comment, Tag
 from .forms import PostForm, CommentForm
+from django.db.models import Avg, Q
+from .forms import CustomUserCreationForm, UserUpdateForm, OrderCreateForm, PetForm, ProductForm, PostForm, CommentForm, ReviewForm
 
 
 def index(request):
@@ -82,9 +84,31 @@ def catalog(request):
 
 
 def product_detail(request, product_id):
-    """Страница карточки конкретного товара"""
+    """Страница карточки товара с отзывами и рейтингом"""
     product = get_object_or_404(Product, id=product_id)
-    return render(request, 'store/product_detail.html', {'product': product})
+    reviews = product.reviews.all()
+
+    # Считаем средний рейтинг (Django сделает это прямо в базе данных)
+    avg_rating = reviews.aggregate(Avg('rating'))['rating__avg']
+
+    if request.method == 'POST' and request.user.is_authenticated:
+        form = ReviewForm(request.POST)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.product = product
+            review.user = request.user
+            review.save()
+            messages.success(request, 'Спасибо за ваш отзыв!')
+            return redirect('store:product_detail', product_id=product.id)
+    else:
+        form = ReviewForm()
+
+    return render(request, 'store/product_detail.html', {
+        'product': product,
+        'reviews': reviews,
+        'avg_rating': avg_rating,
+        'form': form
+    })
 
 
 def register(request):

@@ -16,6 +16,7 @@ from django.db.models import Avg, Q
 from .forms import CustomUserCreationForm, UserUpdateForm, OrderCreateForm, PetForm, ProductForm, PostForm, CommentForm, ReviewForm
 from django.db.models import Count
 from django.urls import reverse
+from django.http import JsonResponse
 
 def index(request):
     """Главная страница магазина"""
@@ -527,28 +528,45 @@ def community(request):
 
 @login_required
 def like_post(request, post_id):
-    """Ставим или убираем лайк"""
-    post = get_object_or_404(Post, id=post_id)
-    if request.user in post.likes.all():
-        post.likes.remove(request.user)  # Убираем лайк, если он уже стоит
-    else:
-        post.likes.add(request.user)  # Ставим лайк
+    if request.method == 'POST':
+        post = get_object_or_404(Post, id=post_id)
 
-    # Возвращаем пользователя на ту же страницу, где он был
-    return redirect(f"{reverse('store:community')}#post-{post.id}")
+        if request.user in post.likes.all():
+            post.likes.remove(request.user)
+            liked = False
+        else:
+            post.likes.add(request.user)
+            liked = True
+
+        # Возвращаем JSON-ответ (только данные, без перезагрузки HTML)
+        return JsonResponse({
+            'liked': liked,
+            'likes_count': post.likes.count()
+        })
+    return JsonResponse({'error': 'Invalid request'}, status=400)
 
 
 @login_required
 def add_comment(request, post_id):
-    """Добавление комментария к посту"""
     post = get_object_or_404(Post, id=post_id)
     if request.method == 'POST':
-        form = CommentForm(request.POST)
-        if form.is_valid():
-            comment = form.save(commit=False)
-            comment.post = post
-            comment.author = request.user
-            comment.save()
+        text = request.POST.get('text')
+        if text:
+            comment = Comment.objects.create(post=post, author=request.user, text=text)
+
+            # Если это AJAX запрос, возвращаем данные нового комментария
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'author': comment.author.username,
+                    'author_initial': comment.author.username[0].upper(),
+                    'text': comment.text,
+                    'date': comment.created_at.strftime("%d.%m.%Y %H:%M"),
+                    'comments_count': post.comments.count()
+                })
+
+    # На случай, если у кого-то отключен JS, оставляем старый редирект как запасной вариант
+    from django.urls import reverse
     return redirect(f"{reverse('store:community')}#post-{post.id}")
 
 @user_passes_test(is_store_admin, login_url='store:index')

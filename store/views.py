@@ -10,6 +10,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.core.paginator import Paginator
 from .models import Order
 from django.views.decorators.http import require_POST
+import re
+from .models import Post, Comment, Tag
+from .forms import PostForm, CommentForm
 
 
 def index(request):
@@ -409,3 +412,69 @@ def change_order_status(request, order_id):
         messages.error(request, 'Ошибка: выбран неверный статус.')
 
     return redirect('store:manager_orders')
+
+
+@login_required
+def community(request):
+    """Главная страница Сообщества (Лента)"""
+    # Получаем все посты с предзагрузкой авторов и питомцев (для скорости базы)
+    posts = Post.objects.select_related('author', 'pet').prefetch_related('tags', 'likes').all()
+
+    # Можно сделать фильтрацию по хештегу, если кликнули на него
+    tag_filter = request.GET.get('tag')
+    if tag_filter:
+        posts = posts.filter(tags__name=tag_filter)
+
+    if request.method == 'POST':
+        # Важно: передаем user, чтобы в форме отображались только его питомцы
+        form = PostForm(request.POST, request.FILES, user=request.user)
+        if form.is_valid():
+            new_post = form.save(commit=False)
+            new_post.author = request.user
+            new_post.save()
+
+            # АВТОМАТИЧЕСКИЙ ПАРСИНГ ХЕШТЕГОВ
+            # Ищем все слова, начинающиеся с # (например: #корм #котики)
+            hashtags = re.findall(r'#(\w+)', new_post.text)
+            for tag_name in hashtags:
+                # Берем тег из базы или создаем новый, если такого еще нет
+                tag, created = Tag.objects.get_or_create(name=tag_name.lower())
+                new_post.tags.add(tag)  # Привязываем к посту
+
+            messages.success(request, 'Пост успешно опубликован!')
+            return redirect('store:community')
+    else:
+        form = PostForm(user=request.user)
+
+    return render(request, 'store/community.html', {
+        'posts': posts,
+        'form': form,
+        'tag_filter': tag_filter
+    })
+
+
+@login_required
+def like_post(request, post_id):
+    """Ставим или убираем лайк"""
+    post = get_object_or_404(Post, id=post_id)
+    if request.user in post.likes.all():
+        post.likes.remove(request.user)  # Убираем лайк, если он уже стоит
+    else:
+        post.likes.add(request.user)  # Ставим лайк
+
+    # Возвращаем пользователя на ту же страницу, где он был
+    return redirect(request.META.get('HTTP_REFERER', 'store:community'))
+
+
+@login_required
+def add_comment(request, post_id):
+    """Добавление комментария к посту"""
+    post = get_object_or_404(Post, id=post_id)
+    if request.method == 'POST':
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.post = post
+            comment.author = request.user
+            comment.save()
+    return redirect(request.META.get('HTTP_REFERER', 'store:community'))

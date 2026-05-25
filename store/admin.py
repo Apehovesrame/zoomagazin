@@ -1,6 +1,11 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import CustomUser, Pet, Product, Order, OrderItem
+from .models import Post, Comment, Tag
+
+admin.site.register(Post)
+admin.site.register(Comment)
+admin.site.register(Tag)
 
 # 1. Настройка отображения пользователей
 @admin.register(CustomUser)

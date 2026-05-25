@@ -30,6 +30,11 @@ urlpatterns = [
     path('manager/orders/<int:order_id>/status/', views.change_order_status, name='change_order_status'),
 
 
+    path('community/', views.community, name='community'),
+    path('community/like/<int:post_id>/', views.like_post, name='like_post'),
+    path('community/comment/<int:post_id>/', views.add_comment, name='add_comment'),
+
+
     path('logout/', views.user_logout, name='logout'),
 
     # Вход и Выход (используем встроенные CBV Django)

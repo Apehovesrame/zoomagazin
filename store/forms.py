@@ -2,8 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from .models import CustomUser
 from .models import Order
-from .models import Pet
-from .models import Product
+from .models import Product, OrderItem, Pet, Post, Comment
 
 class CustomUserCreationForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
@@ -104,4 +103,41 @@ class ProductForm(forms.ModelForm):
             'min_weight': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': 'Мин. вес'}),
             'max_weight': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': 'Макс. вес'}),
             'target_activity': forms.Select(choices=ACTIVITY_CHOICES, attrs={'class': 'form-select'}),
+        }
+
+class PostForm(forms.ModelForm):
+    class Meta:
+        model = Post
+        fields = ['image', 'text', 'pet']
+        widgets = {
+            'text': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Что нового у вашего пушистого друга? Напишите текст и добавьте #хештеги...'
+            }),
+            'image': forms.FileInput(attrs={'class': 'form-control'}),
+            'pet': forms.Select(attrs={'class': 'form-select'})
+        }
+
+    # Маленькая, но важная хитрость: переопределяем инициализацию формы,
+    # чтобы в выпадающем списке питомцев пользователь видел ТОЛЬКО СВОИХ животных, а не чужих.
+    def __init__(self, *args, **kwargs):
+        # Вытаскиваем пользователя из аргументов (мы передадим его из views.py)
+        user = kwargs.pop('user', None)
+        super(PostForm, self).__init__(*args, **kwargs)
+        if user:
+            # Фильтруем список питомцев
+            self.fields['pet'].queryset = Pet.objects.filter(user=user)
+            self.fields['pet'].empty_label = "Написать от своего имени (без привязки к питомцу)"
+
+class CommentForm(forms.ModelForm):
+    class Meta:
+        model = Comment
+        fields = ['text']
+        widgets = {
+            'text': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2,
+                'placeholder': 'Написать комментарий...'
+            }),
         }

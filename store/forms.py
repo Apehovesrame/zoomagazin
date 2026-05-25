@@ -113,22 +113,20 @@ class PostForm(forms.ModelForm):
             'text': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 4,
-                'placeholder': 'Что нового у вашего пушистого друга? Напишите текст и добавьте #хештеги...'
+                # Меняем плейсхолдер на более универсальный:
+                'placeholder': 'Напишите обзор на товар, задайте вопрос или поделитесь фото... Не забудьте #хештеги!'
             }),
             'image': forms.FileInput(attrs={'class': 'form-control'}),
             'pet': forms.Select(attrs={'class': 'form-select'})
         }
 
-    # Маленькая, но важная хитрость: переопределяем инициализацию формы,
-    # чтобы в выпадающем списке питомцев пользователь видел ТОЛЬКО СВОИХ животных, а не чужих.
     def __init__(self, *args, **kwargs):
-        # Вытаскиваем пользователя из аргументов (мы передадим его из views.py)
         user = kwargs.pop('user', None)
         super(PostForm, self).__init__(*args, **kwargs)
         if user:
-            # Фильтруем список питомцев
             self.fields['pet'].queryset = Pet.objects.filter(user=user)
-            self.fields['pet'].empty_label = "Написать от своего имени (без привязки к питомцу)"
+            # Меняем текст пустого выбора, чтобы было понятно, что питомец не обязателен
+            self.fields['pet'].empty_label = "Обычный пост (без питомца)"
 
 class CommentForm(forms.ModelForm):
     class Meta:

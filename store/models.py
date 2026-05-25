@@ -198,3 +198,17 @@ class Review(models.Model):
 
     def __str__(self):
         return f"Отзыв от {self.user.username} на {self.product.name} ({self.rating} звезд)"
+
+
+class ImageGallery(models.Model):
+    # Эта модель может быть связана с чем угодно
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='images', null=True, blank=True)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images', null=True, blank=True)
+    pet = models.ForeignKey(Pet, on_delete=models.CASCADE, related_name='images', null=True, blank=True)
+
+    image = models.ImageField('Фото', upload_to='gallery/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Фото из галереи'
+        verbose_name_plural = 'Галерея'

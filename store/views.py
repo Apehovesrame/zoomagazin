@@ -14,7 +14,8 @@ import re
 from .models import Post, Comment, Tag
 from django.db.models import Avg, Q
 from .forms import CustomUserCreationForm, UserUpdateForm, OrderCreateForm, PetForm, ProductForm, PostForm, CommentForm, ReviewForm
-
+from django.db.models import Count
+from django.urls import reverse
 
 def index(request):
     """Главная страница магазина"""
@@ -455,17 +456,10 @@ def change_order_status(request, order_id):
 
 @login_required
 def community(request):
-    """Главная страница Сообщества (Лента)"""
-    # Получаем все посты с предзагрузкой авторов и питомцев (для скорости базы)
-    posts = Post.objects.select_related('author', 'pet').prefetch_related('tags', 'likes').all()
+    """Главная страница Сообщества (Лента) с фильтрацией и сортировкой"""
 
-    # Можно сделать фильтрацию по хештегу, если кликнули на него
-    tag_filter = request.GET.get('tag')
-    if tag_filter:
-        posts = posts.filter(tags__name=tag_filter)
-
+    # --- БЛОК ОБРАБОТКИ POST (СОЗДАНИЕ ПОСТА) ---
     if request.method == 'POST':
-        # Важно: передаем user, чтобы в форме отображались только его питомцы
         form = PostForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             new_post = form.save(commit=False)
@@ -478,22 +472,56 @@ def community(request):
                 ImageGallery.objects.create(post=new_post, image=f)
 
             # АВТОМАТИЧЕСКИЙ ПАРСИНГ ХЕШТЕГОВ
-            # Ищем все слова, начинающиеся с # (например: #корм #котики)
             hashtags = re.findall(r'#(\w+)', new_post.text)
             for tag_name in hashtags:
-                # Берем тег из базы или создаем новый, если такого еще нет
                 tag, created = Tag.objects.get_or_create(name=tag_name.lower())
-                new_post.tags.add(tag)  # Привязываем к посту
+                new_post.tags.add(tag)
 
             messages.success(request, 'Пост успешно опубликован!')
             return redirect('store:community')
     else:
         form = PostForm(user=request.user)
 
+    # --- БЛОК СОРТИРОВКИ И ФИЛЬТРАЦИИ (GET) ---
+
+    # 1. Читаем параметры фильтрации и сортировки из URL
+    sort_param = request.GET.get('sort', 'newest')
+    filter_param = request.GET.get('filter', 'all')
+    tag_filter = request.GET.get('tag')  # сохраняем твой фильтр по тегам
+
+    # 2. Базовый запрос с твоей оптимизацией + подсчет лайков/комментов (annotate)
+    posts = Post.objects.select_related('author', 'pet').prefetch_related('tags', 'likes').annotate(
+        num_likes=Count('likes', distinct=True),
+        num_comments=Count('comments', distinct=True)
+    )
+
+    # 3. Применяем фильтр по типу постов / животным
+    if tag_filter:
+        # Твой старый фильтр по хештегу (если кликнули на #тег)
+        posts = posts.filter(tags__name=tag_filter)
+    elif filter_param == 'general':
+        # Общие темы (где питомец НЕ привязан)
+        posts = posts.filter(pet__isnull=True)
+    elif filter_param != 'all':
+        # Конкретный вид животного (Кошка / Собака), проверяем поле species у связанной модели Pet
+        posts = posts.filter(pet__species=filter_param)
+
+    # 4. Применяем логику сортировки
+    if sort_param == 'oldest':
+        posts = posts.order_by('created_at')
+    elif sort_param == 'likes':
+        posts = posts.order_by('-num_likes', '-created_at')
+    elif sort_param == 'comments':
+        posts = posts.order_by('-num_comments', '-created_at')
+    else:  # newest (по умолчанию)
+        posts = posts.order_by('-created_at')
+
     return render(request, 'store/community.html', {
         'posts': posts,
         'form': form,
-        'tag_filter': tag_filter
+        'tag_filter': tag_filter,
+        'current_sort': sort_param,  # Передаем в шаблон, чтобы выпадающий список помнил выбор
+        'current_filter': filter_param,  # Передаем в шаблон, чтобы выпадающий список помнил выбор
     })
 
 
@@ -507,7 +535,7 @@ def like_post(request, post_id):
         post.likes.add(request.user)  # Ставим лайк
 
     # Возвращаем пользователя на ту же страницу, где он был
-    return redirect(request.META.get('HTTP_REFERER', 'store:community'))
+    return redirect(f"{reverse('store:community')}#post-{post.id}")
 
 
 @login_required
@@ -521,7 +549,7 @@ def add_comment(request, post_id):
             comment.post = post
             comment.author = request.user
             comment.save()
-    return redirect(request.META.get('HTTP_REFERER', 'store:community'))
+    return redirect(f"{reverse('store:community')}#post-{post.id}")
 
 @user_passes_test(is_store_admin, login_url='store:index')
 def delete_product_image(request, image_id):

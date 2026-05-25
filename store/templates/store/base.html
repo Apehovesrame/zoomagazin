@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -5,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Зоомагазин{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'store/css/custom.css' %}">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -75,5 +77,41 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const previewContainers = document.querySelectorAll('.product-gallery-preview');
+
+        previewContainers.forEach(container => {
+            const imgStr = container.getAttribute('data-images');
+            if (!imgStr) return; // Если фото нет, пропускаем
+
+            const images = imgStr.split(',');
+            if (images.length <= 1) return; // Если фото всего одно, эффект не нужен
+
+            const imgElement = container.querySelector('.preview-img');
+
+            // Когда двигаем мышкой по картинке
+            container.addEventListener('mousemove', (e) => {
+                const rect = container.getBoundingClientRect();
+                const x = e.clientX - rect.left; // Узнаем позицию курсора по оси X
+                const width = rect.width;
+
+                // Вычисляем процент (от 0 до 1), где находится курсор, и умножаем на кол-во фото
+                const index = Math.floor((x / width) * images.length);
+                // Защита от выхода за пределы массива
+                const safeIndex = Math.min(Math.max(index, 0), images.length - 1);
+
+                // Меняем источник картинки
+                imgElement.src = images[safeIndex];
+            });
+
+            // Когда мышь уходит, возвращаем самую первую картинку (обложку)
+            container.addEventListener('mouseleave', () => {
+                imgElement.src = images[0];
+            });
+        });
+    });
+    </script>
 </body>
 </html>

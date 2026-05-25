@@ -78,14 +78,30 @@
                                     ✏️
                                 </a>
 
-                                {% if pet.image %}
-                                    <img src="{{ pet.image.url }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{ pet.name }}">
-                                {% else %}
-                                    <div class="bg-light text-center border-bottom d-flex align-items-center justify-content-center" style="height: 200px;">
-                                        <span class="fs-1">🐾</span>
-                                    </div>
-                                {% endif %}
+                                {% if pet.images.all %}
+                                    <div id="carouselPet{{ pet.id }}" class="carousel slide" data-bs-ride="carousel">
+                                        <div class="carousel-inner">
+                                            {% for img in pet.images.all %}
+                                                <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                                                    <img src="{{ img.image.url }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{ pet.name }}">
+                                                </div>
+                                            {% endfor %}
+                                        </div>
 
+                                        {% if pet.images.count > 1 %}
+                                            <button class="carousel-control-prev" type="button" data-bs-target="#carouselPet{{ pet.id }}" data-bs-slide="prev">
+                                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                            </button>
+                                            <button class="carousel-control-next" type="button" data-bs-target="#carouselPet{{ pet.id }}" data-bs-slide="next">
+                                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                    {% else %}
+                                        <div class="bg-light text-center border-bottom d-flex align-items-center justify-content-center" style="height: 200px;">
+                                            <span class="fs-1">🐾</span>
+                                        </div>
+                                    {% endif %}
                                 <div class="card-body d-flex flex-column">
                                     <h5 class="card-title fw-bold text-primary">{{ pet.name }}</h5>
                                     <p class="card-text small mb-1"><strong>Вид:</strong> {{ pet.species }}</p>

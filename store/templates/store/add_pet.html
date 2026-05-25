@@ -3,18 +3,55 @@
 
 {% block content %}
 <div class="row justify-content-center mt-4">
-    <div class="col-md-6">
-        <div class="card shadow-sm">
-            <div class="card-header bg-success text-white">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-success text-white py-3">
                 <h4 class="mb-0">🐾 Расскажите о своем питомце</h4>
             </div>
-            <div class="card-body">
-                <form method="post">
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
-                    {{ form.as_p }}
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Имя питомца</label>
+                                {{ form.name }}
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Вид</label>
+                                {{ form.species }}
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Порода</label>
+                                {{ form.breed }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Возрастная группа</label>
+                                {{ form.age_group }}
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Вес (кг)</label>
+                                {{ form.weight }}
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Уровень активности</label>
+                                {{ form.activity_level }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Фотографии питомца (можно несколько)</label>
+                        <input type="file" name="images_input" multiple class="form-control">
+                        <small class="text-muted">Загрузите лучшие снимки вашего любимца.</small>
+                    </div>
+
                     <div class="d-flex justify-content-between mt-4">
                         <a href="{% url 'store:profile' %}" class="btn btn-outline-secondary">Отмена</a>
-                        <button type="submit" class="btn btn-success">Сохранить питомца</button>
+                        <button type="submit" class="btn btn-success px-4">Сохранить питомца</button>
                     </div>
                 </form>
             </div>

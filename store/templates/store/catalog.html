@@ -47,14 +47,18 @@
         <div class="col">
         <a href="{% url 'store:product_detail' product.id %}" class="text-decoration-none text-dark h-100 d-block">
             <div class="card h-100 shadow-sm border-0 product-card">
-                {% if product.image %}
-                    <img src="{{ product.image.url }}" class="card-img-top p-3" alt="{{ product.name }}" style="height: 200px; object-fit: contain;">
-                {% else %}
-                    <div class="bg-light d-flex align-items-center justify-content-center border-bottom" style="height: 200px;">
-                        <span class="text-muted fs-5">Нет фото</span>
-                    </div>
-                {% endif %}
 
+                <div class="product-gallery-preview"
+                     data-images="{% for img in product.images.all %}{{ img.image.url }}{% if not forloop.last %},{% endif %}{% endfor %}">
+
+                    {% if product.images.all %}
+                        <img src="{{ product.images.first.image.url }}" class="card-img-top p-3 preview-img transition-scale" alt="{{ product.name }}" style="height: 200px; object-fit: contain;">
+                    {% else %}
+                        <div class="bg-light d-flex align-items-center justify-content-center border-bottom" style="height: 200px;">
+                            <span class="text-muted fs-5">Нет фото</span>
+                        </div>
+                    {% endif %}
+                </div>
                 <div class="card-body">
                     <span class="badge bg-info mb-2">{{ product.category }}</span>
                     <h5 class="card-title fw-bold">{{ product.name }}</h5>

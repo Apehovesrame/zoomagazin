@@ -1,0 +1,22 @@
+.carousel-inner img {
+    height: 400px; /* Фиксированная высота для единообразия */
+    object-fit: contain; /* Картинка целиком помещается в блок */
+    background-color: #f8f9fa; /* Серый фон, если картинка не квадратная */
+}
+
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+    background-color: rgba(0,0,0,0.5); /* Темный фон для стрелочек */
+    border-radius: 50%;
+}
+
+.transition-scale {
+    display: inline-block;
+    transition: transform 0.2s ease;
+}
+.transition-scale:hover {
+    transform: scale(1.1);
+}
+.cursor-default {
+    cursor: default;
+}

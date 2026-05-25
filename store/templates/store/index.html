@@ -36,13 +36,18 @@
         <div class="col">
             <div class="card h-100 shadow-sm border-0 product-card">
                 <a href="{% url 'store:product_detail' product.id %}" class="text-decoration-none text-dark">
-                    {% if product.image %}
-                        <img src="{{ product.image.url }}" class="card-img-top p-3" style="height: 250px; object-fit: contain;" alt="{{ product.name }}">
-                    {% else %}
-                        <div class="bg-light d-flex align-items-center justify-content-center border-bottom" style="height: 250px;">
-                            <span class="fs-1">📦</span>
-                        </div>
-                    {% endif %}
+
+                    <div class="product-gallery-preview"
+                         data-images="{% for img in product.images.all %}{{ img.image.url }}{% if not forloop.last %},{% endif %}{% endfor %}">
+
+                        {% if product.images.all %}
+                            <img src="{{ product.images.first.image.url }}" class="card-img-top p-3 preview-img transition-scale" style="height: 250px; object-fit: contain;" alt="{{ product.name }}">
+                        {% else %}
+                            <div class="bg-light d-flex align-items-center justify-content-center border-bottom" style="height: 250px;">
+                                <span class="fs-1">📦</span>
+                            </div>
+                        {% endif %}
+                    </div>
                     <div class="card-body text-center">
                         <span class="badge bg-light text-dark mb-2 border">{{ product.category }}</span>
                         <h5 class="card-title fw-bold text-primary">{{ product.name }}</h5>

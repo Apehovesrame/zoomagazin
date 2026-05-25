@@ -13,20 +13,39 @@
 
 <div class="row mt-4">
     <div class="col-md-6">
-    {% if product.image %}
-        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="img-fluid rounded shadow-sm bg-white p-3" style="max-height: 500px; object-fit: contain; width: 100%;">
-    {% else %}
-        <div class="bg-light d-flex align-items-center justify-content-center border rounded" style="height: 400px;">
-            <span class="text-muted fs-4">Нет фото</span>
+        {% if product.images.all %}
+            <div id="carouselProduct{{ product.id }}" class="carousel slide shadow-sm rounded" data-bs-ride="carousel">
+                <div class="carousel-inner rounded">
+                    {% for img in product.images.all %}
+                        <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                            <img src="{{ img.image.url }}" alt="{{ product.name }}" class="d-block w-100 img-fluid bg-white p-3" style="max-height: 500px; object-fit: contain;">
+                        </div>
+                    {% endfor %}
+                </div>
+
+                {% if product.images.count > 1 %}
+                    <button class="carousel-control-prev" type="button" data-bs-target="#carouselProduct{{ product.id }}" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#carouselProduct{{ product.id }}" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    </button>
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="bg-light d-flex align-items-center justify-content-center border rounded" style="height: 400px;">
+                <div class="text-center text-muted">
+                    <span class="display-1 d-block mb-3">📸</span>
+                    <span class="fs-4">Нет фото</span>
+                </div>
+            </div>
+        {% endif %}
         </div>
-    {% endif %}
-</div>
+
     <div class="col-md-6">
         <span class="badge bg-secondary mb-2">{{ product.category }}</span>
         <h1 class="mb-3">{{ product.name }}</h1>
         <h2 class="text-primary mb-4">{{ product.price }} руб.</h2>
-
-        <!--<p class="lead">{{ product.description }}</p>-->
 
         <div class="product-description-wrapper mb-4">
             <h5 class="fw-bold">Описание товара</h5>
@@ -61,7 +80,6 @@
                 collapseButton.innerHTML = 'Развернуть описание ↓';
             });
         </script>
-
 
         {% if product.category == 'Корма' %}
         <ul class="list-group list-group-flush mb-4">

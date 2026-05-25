@@ -35,8 +35,9 @@
                                 {{ form.price }}
                             </div>
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Изображение товара</label>
-                                {{ form.image }}
+                                <label class="form-label fw-bold">Изображение товара (можно выбрать несколько)</label>
+                                <input type="file" name="images_input" multiple class="form-control">
+                                <small class="text-muted">Зажмите Ctrl или Shift для выбора нескольких файлов</small>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Описание</label>

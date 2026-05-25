@@ -35,8 +35,19 @@
                                 {{ form.price }}
                             </div>
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Изображение товара</label>
-                                {{ form.image }}
+                                <label class="form-label fw-bold">Текущие фото:</label>
+                                <div class="row g-2 mb-3">
+                                    {% for img in product.images.all %}
+                                    <div class="col-3 position-relative">
+                                        <img src="{{ img.image.url }}" class="img-thumbnail shadow-sm" style="height: 100px; width: 100%; object-fit: cover;">
+                                        <a href="{% url 'store:delete_product_image' img.id %}" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1">×</a>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+
+                                <label class="form-label fw-bold">Добавить новые фото:</label>
+                                <input type="file" name="images_input" multiple class="form-control">
+                                <small class="text-muted">Можно выбрать сразу несколько файлов</small>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Описание</label>

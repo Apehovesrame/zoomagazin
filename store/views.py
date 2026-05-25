@@ -1,7 +1,7 @@
 from django.db.models import Q
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
-from .models import Product, OrderItem, Pet
+from .models import Product, OrderItem, Pet, ImageGallery
 from .forms import CustomUserCreationForm, UserUpdateForm, OrderCreateForm, PetForm, ProductForm
 from django.contrib.auth import logout
 from django.contrib import messages
@@ -277,6 +277,12 @@ def add_pet(request):
             pet = form.save(commit=False)
             pet.user = request.user
             pet.save()
+
+            # Сохраняем фото в галерею
+            files = request.FILES.getlist('images_input')
+            for f in files:
+                ImageGallery.objects.create(pet=pet, image=f)
+
             messages.success(request, f'Питомец {pet.name} успешно добавлен в ваш профиль!')
             return redirect('store:profile')
     else:
@@ -358,6 +364,11 @@ def add_product(request):
         form = ProductForm(request.POST, request.FILES)
         if form.is_valid():
             product = form.save()
+
+            files = request.FILES.getlist('images_input')
+            for f in files:
+                 ImageGallery.objects.create(product=product, image=f)
+
             messages.success(request, f'Товар «{product.name}» успешно добавлен!')
             return redirect('store:manager_dashboard')
     else:
@@ -381,6 +392,11 @@ def edit_product(request, product_id):
         form = ProductForm(request.POST, request.FILES, instance=product)
         if form.is_valid():
             form.save()
+
+            files = request.FILES.getlist('images_input')
+            for f in files:
+                ImageGallery.objects.create(product=product, image=f)
+
             messages.success(request, f'Товар «{product.name}» успешно обновлен!')
             return redirect('store:manager_dashboard')
     else:
@@ -457,6 +473,11 @@ def community(request):
             new_post.author = request.user
             new_post.save()
 
+            # Логика загрузки нескольких фото
+            files = request.FILES.getlist('images_input')
+            for f in files:
+                ImageGallery.objects.create(post=new_post, image=f)
+
             # АВТОМАТИЧЕСКИЙ ПАРСИНГ ХЕШТЕГОВ
             # Ищем все слова, начинающиеся с # (например: #корм #котики)
             hashtags = re.findall(r'#(\w+)', new_post.text)
@@ -502,3 +523,11 @@ def add_comment(request, post_id):
             comment.author = request.user
             comment.save()
     return redirect(request.META.get('HTTP_REFERER', 'store:community'))
+
+@user_passes_test(is_store_admin, login_url='store:index')
+def delete_product_image(request, image_id):
+    image = get_object_or_404(ImageGallery, id=image_id)
+    product_id = image.product.id
+    image.delete()
+    messages.success(request, 'Фотография удалена.')
+    return redirect('store:edit_product', product_id=product_id)

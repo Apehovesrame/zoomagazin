@@ -28,7 +28,7 @@ urlpatterns = [
     path('manager/product/delete/<int:product_id>/', views.delete_product, name='delete_product'),
     path('manager/orders/', views.manager_orders, name='manager_orders'),
     path('manager/orders/<int:order_id>/status/', views.change_order_status, name='change_order_status'),
-
+    path('manager/product-image/delete/<int:image_id>/', views.delete_product_image, name='delete_product_image'),
 
     path('community/', views.community, name='community'),
     path('community/like/<int:post_id>/', views.like_post, name='like_post'),

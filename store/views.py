@@ -367,6 +367,22 @@ def edit_pet(request, pet_id):
 
 
 @login_required
+def pet_detail(request, pet_id):
+    # Получаем питомца
+    pet = get_object_or_404(Pet, id=pet_id)
+
+    # Получаем только посты ЭТОГО питомца
+    posts = Post.objects.filter(pet=pet).select_related('author', 'pet').prefetch_related('tags', 'likes').annotate(
+        num_likes=Count('likes', distinct=True),
+        num_comments=Count('comments', distinct=True)
+    ).order_by('-created_at')
+
+    return render(request, 'store/pet_detail.html', {
+        'pet': pet,
+        'posts': posts,
+    })
+
+@login_required
 def smart_catalog(request, pet_id):
     """Каталог, отфильтрованный под конкретного питомца (Умный подбор)"""
     pet = get_object_or_404(Pet, id=pet_id, user=request.user)

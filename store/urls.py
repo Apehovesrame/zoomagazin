@@ -36,6 +36,8 @@ urlpatterns = [
     path('community/edit/<int:post_id>/', views.edit_post, name='edit_post'),
     path('community/delete/<int:post_id>/', views.delete_post, name='delete_post'),
 
+    path('pet/<int:pet_id>/', views.pet_detail, name='pet_detail'),
+
     path('logout/', views.user_logout, name='logout'),
 
     # Вход и Выход (используем встроенные CBV Django)

@@ -1,74 +1,54 @@
 {% extends 'store/base.html' %}
 
-{% block title %}Лента сообщества - Зоомагазин{% endblock %}
+{% block title %}Питомец {{ pet.name }} - Зоомагазин{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center mt-4 mb-5">
     <div class="col-lg-8">
+        
+        <div class="mb-4">
+            <a href="{% url 'store:community' %}" class="text-decoration-none text-muted fw-bold">← Вернуться в общую ленту</a>
+        </div>
 
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="fw-bold mb-0">📸 Лента сообщества</h2>
-            {% if tag_filter %}
-                <div>
-                    <span class="badge bg-primary fs-6">#{{ tag_filter }}</span>
-                    <a href="{% url 'store:community' %}" class="btn btn-sm btn-outline-secondary ms-2">Показать все посты</a>
+        <div class="card shadow-sm border-0 mb-5 bg-white rounded-4 overflow-hidden">
+            <div class="bg-primary bg-opacity-10 py-4 px-4 border-bottom d-flex align-items-center">
+                
+                <div class="bg-white rounded-circle shadow-sm d-flex align-items-center justify-content-center me-4" style="width: 100px; height: 100px; font-size: 3rem;">
+                    {% if pet.species == 'Кошка' %}🐱
+                    {% elif pet.species == 'Собака' %}🐶
+                    {% else %}🐾{% endif %}
                 </div>
-            {% endif %}
-        </div>
 
-        <div class="card shadow-sm border-0 mb-4 bg-white">
-            <div class="card-body p-3">
-                <form method="get" class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
-
-                    <div class="d-flex align-items-center">
-                        <span class="fw-bold me-2 text-muted small text-uppercase">Фильтр:</span>
-                        <select name="filter" class="form-select form-select-sm fw-bold border-0 bg-light" style="width: auto; cursor: pointer;" onchange="this.form.submit()">
-                            <option value="all" {% if current_filter == 'all' %}selected{% endif %}>🌍 Все посты</option>
-                            <option value="general" {% if current_filter == 'general' %}selected{% endif %}>🗣 Общие темы</option>
-                            <option value="Кошка" {% if current_filter == 'Кошка' %}selected{% endif %}>🐱 Кошки</option>
-                            <option value="Собака" {% if current_filter == 'Собака' %}selected{% endif %}>🐶 Собаки</option>
-                        </select>
+                <div class="flex-grow-1">
+                    <h2 class="fw-bold mb-1">{{ pet.name }}</h2>
+                    <div class="text-muted mb-2">
+                        {% if pet.species %}<span class="badge bg-secondary me-1">{{ pet.species }}</span>{% endif %}
+                        Владелец: <span class="fw-bold text-dark">@{{ pet.owner.username|default:pet.user.username }}</span>
                     </div>
-
-                    <div class="d-flex align-items-center">
-                        <span class="fw-bold me-2 text-muted small text-uppercase">Сортировка:</span>
-                        <select name="sort" class="form-select form-select-sm fw-bold border-0 bg-light" style="width: auto; cursor: pointer;" onchange="this.form.submit()">
-                            <option value="newest" {% if current_sort == 'newest' %}selected{% endif %}>✨ Сначала новые</option>
-                            <option value="oldest" {% if current_sort == 'oldest' %}selected{% endif %}>⏳ Сначала старые</option>
-                            <option value="likes" {% if current_sort == 'likes' %}selected{% endif %}>❤️ Самые залайканные</option>
-                            <option value="comments" {% if current_sort == 'comments' %}selected{% endif %}>💬 Самые обсуждаемые</option>
-                        </select>
-                    </div>
-
-                </form>
+                </div>
+            </div>
+            
+            <div class="card-body p-4 bg-light d-flex gap-4">
+                {% if pet.age %}
+                <div>
+                    <span class="text-muted small d-block">Возраст</span>
+                    <span class="fw-bold fs-5">{{ pet.age }}</span>
+                </div>
+                {% endif %}
+                {% if pet.weight %}
+                <div>
+                    <span class="text-muted small d-block">Вес</span>
+                    <span class="fw-bold fs-5">{{ pet.weight }} кг</span>
+                </div>
+                {% endif %}
+                <div>
+                    <span class="text-muted small d-block">Постов</span>
+                    <span class="fw-bold fs-5">{{ posts.count }}</span>
+                </div>
             </div>
         </div>
 
-        <div class="card shadow-sm border-0 mb-5">
-            <div class="card-body p-4 bg-light rounded">
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-
-                    <div class="mb-3">
-                        {{ form.text }}
-                    </div>
-
-                    <div class="row align-items-center g-2">
-                        <div class="col-md-5">
-                            <label class="small text-muted fw-bold mb-1">Прикрепить фото (можно несколько):</label>
-                            <input type="file" name="images_input" multiple class="form-control">
-                        </div>
-                        <div class="col-md-5">
-                            <label class="small text-muted fw-bold mb-1">Привязать питомца (по желанию):</label>
-                            {{ form.pet }}
-                        </div>
-                        <div class="col-md-2 mt-auto text-end">
-                            <button type="submit" class="btn btn-success w-100 fw-bold pb-2 pt-2">Post</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
+        <h4 class="fw-bold mb-4">📸 Фотографии и истории</h4>
 
         {% for post in posts %}
         <div class="card shadow-sm border-0 mb-4" id="post-{{ post.id }}">
@@ -89,13 +69,6 @@
                     <small class="text-muted">{{ post.created_at|date:"d M Y в H:i" }}</small>
                 </div>
 
-                {% if post.pet %}
-                    <a href="{% url 'store:pet_detail' post.pet.id %}" class="text-decoration-none transition-scale d-inline-block me-2">
-                        <span class="badge bg-warning text-dark border p-2 shadow-sm" style="cursor: pointer;">
-                            🐾 Питомец: {{ post.pet.name }}
-                        </span>
-                    </a>
-                {% endif %}
                 {% if request.user == post.author or request.user.is_staff %}
                     <div class="dropdown">
                         <button class="btn btn-sm btn-light border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -133,15 +106,14 @@
                     <div id="carouselPost{{ post.id }}" class="carousel slide mt-3 shadow-sm rounded" data-bs-ride="carousel">
                         <div class="carousel-indicators">
                             {% for img in post.images.all %}
-                                <button type="button" data-bs-target="#carouselPost{{ post.id }}" data-bs-slide-to="{{ forloop.counter0 }}"
-                                        class="{% if forloop.first %}active{% endif %}" aria-current="true"></button>
+                                <button type="button" data-bs-target="#carouselPost{{ post.id }}" data-bs-slide-to="{{ forloop.counter0 }}" class="{% if forloop.first %}active{% endif %}" aria-current="true"></button>
                             {% endfor %}
                         </div>
 
                         <div class="carousel-inner rounded">
                             {% for img in post.images.all %}
                                 <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                                    <img src="{{ img.image.url }}" class="d-block w-100" style="max-height: 400px; object-fit: contain; background: #f8f9fa;" alt="Фото поста">
+                                    <img src="{{ img.image.url }}" class="d-block w-100" style="max-height: 400px; object-fit: contain; background: #f8f9fa;">
                                 </div>
                             {% endfor %}
                         </div>
@@ -160,14 +132,10 @@
 
             <div class="card-footer bg-white border-top-0 pt-0 pb-4">
                 <div class="d-flex align-items-center gap-4 mb-3 border-bottom pb-3">
-                    <button class="btn btn-link text-decoration-none p-0 border-0 fs-5 transition-scale like-btn"
-                            data-url="{% url 'store:like_post' post.id %}">
-                        <span class="like-icon">
-                            {% if request.user in post.likes.all %}❤️{% else %}🤍{% endif %}
-                        </span>
+                    <button class="btn btn-link text-decoration-none p-0 border-0 fs-5 transition-scale like-btn" data-url="{% url 'store:like_post' post.id %}">
+                        <span class="like-icon">{% if request.user in post.likes.all %}❤️{% else %}🤍{% endif %}</span>
                         <span class="fw-bold text-dark fs-6 like-count">{{ post.likes.count }}</span>
                     </button>
-
                     <span class="text-muted fs-5 cursor-default">
                         💬 <span class="fw-bold fs-6 comments-count-badge">{{ post.comments.count }}</span>
                     </span>
@@ -180,7 +148,6 @@
                                 <div class="bg-secondary text-white rounded-circle d-flex justify-content-center align-items-center me-2 mt-1" style="width: 32px; height: 32px; font-size: 0.8rem;">
                                     {{ comment.author.username|make_list|first|upper }}
                                 </div>
-
                                 <div class="bg-light rounded p-2 px-3 w-100 border">
                                     <div class="d-flex justify-content-between align-items-center mb-1">
                                         <span class="fw-bold small text-dark">{{ comment.author.username }}</span>
@@ -202,9 +169,9 @@
         </div>
         {% empty %}
         <div class="text-center py-5 text-muted bg-white rounded shadow-sm border border-dashed">
-            <span class="display-1 d-block mb-3">📸</span>
-            <h4 class="fw-bold">Лента пока пуста</h4>
-            <p>Станьте первым, кто поделится фотографией или историей своего питомца!</p>
+            <span class="display-1 d-block mb-3">📭</span>
+            <h4 class="fw-bold">Нет записей</h4>
+            <p>У этого питомца пока нет фотографий.</p>
         </div>
         {% endfor %}
 
@@ -212,23 +179,15 @@
 </div>
 
 <style>
-    .transition-scale {
-        display: inline-block;
-        transition: transform 0.2s ease;
-    }
-    .transition-scale:hover {
-        transform: scale(1.1);
-    }
-    .cursor-default {
-        cursor: default;
-    }
+    .transition-scale { transition: transform 0.2s ease; }
+    .transition-scale:hover { transform: scale(1.05); }
+    .cursor-default { cursor: default; }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const getCsrfToken = () => document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-    // --- ЛОГИКА ЛАЙКОВ ---
     document.querySelectorAll('.like-btn').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
@@ -238,54 +197,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
             fetch(url, {
                 method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCsrfToken(),
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
+                headers: { 'X-CSRFToken': getCsrfToken(), 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(res => res.json()).then(data => {
                 iconSpan.innerHTML = data.liked ? '❤️' : '🤍';
                 countSpan.textContent = data.likes_count;
-            })
-            .catch(error => console.error('Ошибка лайка:', error));
+            }).catch(err => console.error(err));
         });
     });
 
-    // --- ЛОГИКА КОММЕНТАРИЕВ ---
     document.querySelectorAll('.ajax-comment-form').forEach(form => {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
-
             const url = this.action;
             const inputField = this.querySelector('input[name="text"]');
-            const textValue = inputField.value;
             const submitBtn = this.querySelector('button[type="submit"]');
-
+            
             submitBtn.disabled = true;
-
             const formData = new URLSearchParams();
-            formData.append('text', textValue);
+            formData.append('text', inputField.value);
 
             fetch(url, {
                 method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCsrfToken(),
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
+                headers: { 'X-CSRFToken': getCsrfToken(), 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
+            }).then(res => res.json()).then(data => {
                 if(data.success) {
                     inputField.value = '';
-
-                    const newCommentHtml = `
+                    const newHtml = `
                         <div class="d-flex mb-3">
-                            <div class="bg-secondary text-white rounded-circle d-flex justify-content-center align-items-center me-2 mt-1" style="width: 32px; height: 32px; font-size: 0.8rem;">
-                                ${data.author_initial}
-                            </div>
+                            <div class="bg-secondary text-white rounded-circle d-flex justify-content-center align-items-center me-2 mt-1" style="width: 32px; height: 32px; font-size: 0.8rem;">${data.author_initial}</div>
                             <div class="bg-light rounded p-2 px-3 w-100 border">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <span class="fw-bold small text-dark">${data.author}</span>
@@ -293,23 +233,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </div>
                                 <p class="mb-0 small text-break">${data.text}</p>
                             </div>
-                        </div>
-                    `;
-
-                    const commentsList = this.closest('.comments-section').querySelector('.comments-list');
-                    commentsList.insertAdjacentHTML('beforeend', newCommentHtml);
-
-                    const postCard = this.closest('.card-footer');
-                    const commentsCountBadge = postCard.querySelector('.comments-count-badge');
-                    if (commentsCountBadge) {
-                        commentsCountBadge.textContent = data.comments_count;
-                    }
+                        </div>`;
+                    this.closest('.comments-section').querySelector('.comments-list').insertAdjacentHTML('beforeend', newHtml);
+                    this.closest('.card-footer').querySelector('.comments-count-badge').textContent = data.comments_count;
                 }
-            })
-            .catch(error => console.error('Ошибка комментария:', error))
-            .finally(() => {
-                submitBtn.disabled = false;
-            });
+            }).catch(err => console.error(err)).finally(() => submitBtn.disabled = false);
         });
     });
 });

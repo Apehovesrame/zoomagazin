@@ -46,6 +46,7 @@ class UserUpdateForm(forms.ModelForm):
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
+
 class OrderCreateForm(forms.ModelForm):
     class Meta:
         model = Order
@@ -56,7 +57,42 @@ class OrderCreateForm(forms.ModelForm):
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'example@mail.ru'}),
             'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'ул. Пушкина, д. 10, кв. 5'}),
             'city': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Москва'}),
+
+            # Твой новый виджет для телефона с ограничениями ввода на фронтенде
+            'phone': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '+79991234567',
+                'maxlength': '12',  # +7 (2 символа) + 10 цифр = 12
+                'pattern': r'\+7\d{10}'  # HTML5 регулярное выражение
+            }),
         }
+
+    def __init__(self, *args, **kwargs):
+        # Перехватываем пользователя из view перед инициализацией формы
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+        # Подставляем +7 на старте, если поле пустое
+        if not self.initial.get('phone'):
+            self.initial['phone'] = '+7'
+
+        # Если пользователь вошел в систему — блокируем поле почты для редактирования
+        if self.user and self.user.is_authenticated:
+            self.fields['email'].widget.attrs['readonly'] = True
+            self.fields['email'].widget.attrs['class'] = 'form-control bg-secondary bg-opacity-10 text-muted'
+            self.fields['email'].help_text = 'Почта привязана к аккаунту и не подлежит изменению.'
+
+    def clean_phone(self):
+        """Проверка формата телефона на стороне бэкенда (Django)"""
+        phone = self.cleaned_data.get('phone', '').strip()
+
+        # Регулярное выражение проверяет: строго начинается с +7 и содержит ровно 10 цифр
+        import re
+        if not re.match(r'^\+7\d{10}$', phone):
+            raise forms.ValidationError(
+                'Номер телефона должен начинаться с +7 и содержать ровно 10 цифр после этого (например: +79991234567).'
+            )
+        return phone
 
 
 class PetForm(forms.ModelForm):

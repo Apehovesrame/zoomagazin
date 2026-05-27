@@ -1,18 +1,41 @@
 {% extends 'store/base.html' %}
+
+{% block title %}Редактирование {{ pet.name }} - Зоомагазин{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center mt-4">
+<div class="row justify-content-center mt-4 mb-5">
     <div class="col-md-6">
-        <div class="card shadow-sm">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">Редактировать профиль: {{ pet.name }}</h4>
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white py-3">
+                <h5 class="mb-0 fw-bold">✏️ Редактировать профиль: {{ pet.name }}</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
-                    {{ form.as_p }}
-                    <div class="d-flex justify-content-between mt-4">
-                        <a href="{% url 'store:profile' %}" class="btn btn-outline-secondary">Отмена</a>
-                        <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+
+                    <div class="mb-4 text-center">
+                        <label class="d-block fw-bold text-muted small text-uppercase mb-2">Текущее фото питомца</label>
+                        {% if pet.image %}
+                            <img src="{{ pet.image.url }}" class="rounded shadow-sm border p-1" style="max-width: 180px; max-height: 180px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-light mx-auto rounded-circle d-flex align-items-center justify-content-center text-muted border" style="width: 120px; height: 120px; font-size: 2.5rem;">
+                                🐾
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.as_p }}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-muted">Добавить еще фото в галерею:</label>
+                        <input type="file" name="images_input" multiple class="form-control form-control-sm">
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4 border-top pt-3">
+                        <a href="{% url 'store:profile' %}" class="btn btn-outline-secondary px-4">Отмена</a>
+                        <button type="submit" class="btn btn-success px-4 fw-bold">Сохранить изменения</button>
                     </div>
                 </form>
             </div>

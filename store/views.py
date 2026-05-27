@@ -355,10 +355,17 @@ def edit_pet(request, pet_id):
     pet = get_object_or_404(Pet, id=pet_id, user=request.user)
 
     if request.method == 'POST':
-        # instance=pet говорит Django, что нужно обновить существующую запись, а не создавать новую
+        # ИСПРАВЛЕНО: Добавили request.FILES вторым аргументом, чтобы фото успешно прилетало на сервер
         form = PetForm(request.POST, request.FILES, instance=pet)
         if form.is_valid():
             form.save()
+
+            # Если пользователь при редактировании прикрепил новые фото в галерею — сохраняем их
+            files = request.FILES.getlist('images_input')
+            for f in files:
+                ImageGallery.objects.create(pet=pet, image=f)
+
+            messages.success(request, f'Данные питомца {pet.name} успешно обновлены!')
             return redirect('store:profile')
     else:
         form = PetForm(instance=pet)

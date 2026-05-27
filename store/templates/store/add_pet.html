@@ -63,60 +63,89 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Django по умолчанию дает полям формы ID формата "id_имяполя"
     const speciesField = document.getElementById('id_species');
     const breedField = document.getElementById('id_breed');
+    const dropdown = document.getElementById('custom-breed-dropdown');
 
-    if (!speciesField || !breedField) return;
+    if (!speciesField || !breedField || !dropdown) return;
 
-    // Словарь популярных пород (можешь добавлять сюда любые свои варианты)
+    // Расширенный словарь пород (только кошки и собаки, по алфавиту)
     const breedsData = {
         'Собака': [
-            'Корги', 'Лабрадор-ретривер', 'Немецкая овчарка', 'Золотистый ретривер',
-            'Французский бульдог', 'Бульдог', 'Бигль', 'Пудель', 'Ротвейлер',
-            'Йоркширский терьер', 'Такса', 'Боксер', 'Сибирский хаски', 'Шпиц',
-            'Мопс', 'Доберман', 'Чихуахуа', 'Кокер-спаниель', 'Дворняжка'
+            'Акита-ину', 'Алабай', 'Аляскинский маламут', 'Американский стаффордширский терьер',
+            'Английский бульдог', 'Английский кокер-спаниель', 'Бигль', 'Боксер', 'Бордер-колли',
+            'Бультерьер', 'Вельш-корги', 'Далматин', 'Джек-рассел-терьер', 'Доберман',
+            'Дворняжка (метис)', 'Золотистый ретривер', 'Йоркширский терьер', 'Кавказская овчарка',
+            'Кане-корсо', 'Курцхаар', 'Лабрадор-ретривер', 'Мальтипу', 'Мальтийская болонка',
+            'Мопс', 'Немецкая овчарка', 'Немецкий дог', 'Пекинес', 'Питбуль', 'Померанский шпиц',
+            'Пудель', 'Ротвейлер', 'Самоедская собака', 'Сенбернар', 'Сиба-ину', 'Сибирский хаски',
+            'Такса', 'Той-терьер', 'Французский бульдог', 'Цвергшнауцер', 'Чау-чау', 'Чихуахуа',
+            'Шарпей', 'Ши-тцу', 'Шпиц'
         ],
         'Кошка': [
-            'Мейн-кун', 'Британская короткошерстная', 'Шотландская вислоухая',
-            'Сфинкс', 'Бенгальская', 'Сиамская', 'Персидская', 'Русская голубая',
-            'Рэгдолл', 'Абиссинская', 'Сибирская', 'Ориентальная', 'Беспородная'
-        ],
-        'Птица': [
-            'Волнистый попугай', 'Корелла', 'Канарейка', 'Неразлучник', 'Жако', 'Ара', 'Какаду'
-        ],
-        'Грызун': [
-            'Сирийский хомяк', 'Джунгарский хомяк', 'Морская свинка', 'Декоративная крыса',
-            'Шиншилла', 'Дегу', 'Песчанка'
+            'Абиссинская', 'Бенгальская', 'Беспородная (метис)', 'Британская длинношерстная',
+            'Британская короткошерстная', 'Бурманская', 'Девон-рекс', 'Донской сфинкс',
+            'Канадский сфинкс', 'Корниш-рекс', 'Курильский бобтейл', 'Мейн-кун',
+            'Невская маскарадная', 'Норвежская лесная', 'Ориентальная', 'Персидская',
+            'Русская голубая', 'Рэгдолл', 'Саванна', 'Священная бирма', 'Сиамская',
+            'Сибирская', 'Сомалийская', 'Тайская', 'Турецкая ангора',
+            'Шотландская вислоухая', 'Шотландская прямоухая', 'Экзотическая короткошерстная'
         ]
     };
 
-    // Привязываем datalist к полю породы
-    breedField.setAttribute('list', 'breed-options');
-    breedField.setAttribute('autocomplete', 'off'); // Отключаем стандартные подсказки браузера
+    breedField.setAttribute('autocomplete', 'off');
 
-    // Функция обновления списка пород
-    function updateDatalist() {
+    // Функция фильтрации и отрисовки списка
+    function filterBreeds() {
         const selectedSpecies = speciesField.value;
-        const datalist = document.getElementById('breed-options');
-        datalist.innerHTML = ''; // Очищаем старые варианты
+        const query = breedField.value.toLowerCase().trim();
+        dropdown.innerHTML = ''; // Очищаем список
 
-        if (breedsData[selectedSpecies]) {
-            breedsData[selectedSpecies].forEach(breed => {
-                const option = document.createElement('option');
-                option.value = breed;
-                datalist.appendChild(option);
+        if (!selectedSpecies || !breedsData[selectedSpecies]) {
+            dropdown.classList.add('d-none');
+            return;
+        }
+
+        // Фильтруем строго по первой букве/слогу
+        const filtered = breedsData[selectedSpecies].filter(breed =>
+            breed.toLowerCase().startsWith(query)
+        );
+
+        if (filtered.length > 0 && document.activeElement === breedField) {
+            filtered.forEach(breed => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'list-group-item list-group-item-action py-2 small';
+                btn.textContent = breed;
+
+                // Клик по элементу списка заносит его в input
+                btn.addEventListener('click', function() {
+                    breedField.value = breed;
+                    dropdown.classList.add('d-none');
+                });
+                dropdown.appendChild(btn);
             });
+            dropdown.classList.remove('d-none');
+        } else {
+            dropdown.classList.add('d-none');
         }
     }
 
-    // Запускаем при загрузке (полезно при редактировании)
-    updateDatalist();
+    // Слушатели событий ввода
+    breedField.addEventListener('input', filterBreeds);
+    breedField.addEventListener('focus', filterBreeds);
 
-    // Запускаем каждый раз, когда пользователь меняет вид животного
+    // Закрываем дропдаун, если кликнули мимо него
+    document.addEventListener('click', function(e) {
+        if (e.target !== breedField && e.target !== dropdown && !dropdown.contains(e.target)) {
+            dropdown.classList.add('d-none');
+        }
+    });
+
+    // Очищаем породу при смене вида животного
     speciesField.addEventListener('change', function() {
-        updateDatalist();
-        breedField.value = ''; // Очищаем поле породы при смене вида, чтобы избежать ошибок
+        breedField.value = '';
+        dropdown.classList.add('d-none');
     });
 });
 </script>

@@ -272,42 +272,6 @@ def edit_profile(request):
 
     return render(request, 'store/edit_profile.html', {'form': form})
 
-def add_to_cart(request, product_id):
-    """Добавление товара в корзину (с учетом указанного количества)"""
-    cart = request.session.get('cart', {})
-    product_id_str = str(product_id)
-
-    # Если данные пришли из формы (POST), берем количество. Иначе по умолчанию 1.
-    if request.method == 'POST':
-        quantity = int(request.POST.get('quantity', 1))
-    else:
-        quantity = 1
-
-    if product_id_str in cart:
-        cart[product_id_str] += quantity
-    else:
-        cart[product_id_str] = quantity
-
-    request.session['cart'] = cart
-    return redirect('store:cart')
-
-
-def update_cart(request, product_id):
-    """Обновление точного количества товара прямо из корзины"""
-    if request.method == 'POST':
-        cart = request.session.get('cart', {})
-        product_id_str = str(product_id)
-        quantity = int(request.POST.get('quantity', 1))
-
-        if quantity > 0:
-            cart[product_id_str] = quantity  # Устанавливаем новое значение
-        else:
-            if product_id_str in cart:
-                del cart[product_id_str]  # Если ввели 0, удаляем товар
-
-        request.session['cart'] = cart
-
-    return redirect('store:cart')
 
 def remove_from_cart(request, product_id):
     """Удаление товара из корзины"""
@@ -344,18 +308,90 @@ def view_cart(request):
     return render(request, 'store/cart.html', context)
 
 
+def add_to_cart(request, product_id):
+    """Добавление товара в корзину (с защитой от превышения остатков)"""
+    cart = request.session.get('cart', {})
+    product_id_str = str(product_id)
+    product = get_object_or_404(Product, id=product_id)
+
+    # Определяем добавляемое количество
+    if request.method == 'POST':
+        quantity = int(request.POST.get('quantity', 1))
+    else:
+        quantity = 1
+
+    current_qty = cart.get(product_id_str, 0)
+
+    # ПРОВЕРКА: Если то, что уже в корзине + то, что хотят добавить, превышает склад
+    if current_qty + quantity > product.stock:
+        messages.error(
+            request,
+            f'Невозможно добавить товар в таком количестве! На складе осталось всего {product.stock} шт. '
+            f'(В вашей корзине уже находится {current_qty} шт.)'
+        )
+        return redirect(request.META.get('HTTP_REFERER', 'store:catalog'))
+
+    cart[product_id_str] = current_qty + quantity
+    request.session['cart'] = cart
+    messages.success(request, 'Товар успешно добавлен в корзину.')
+    return redirect('store:cart')
+
+
+def update_cart(request, product_id):
+    """Обновление точного количества товара прямо из корзины (с защитой от превышения)"""
+    if request.method == 'POST':
+        cart = request.session.get('cart', {})
+        product_id_str = str(product_id)
+        quantity = int(request.POST.get('quantity', 1))
+        product = get_object_or_404(Product, id=product_id)
+
+        # ПРОВЕРКА: Предотвращаем ручной ввод числа, превышающего склад
+        if quantity > product.stock:
+            messages.warning(request,
+                             f'Количество товара было автоматически уменьшено до доступного остатка: {product.stock} шт.')
+            cart[product_id_str] = product.stock
+        elif quantity > 0:
+            cart[product_id_str] = quantity  # Устанавливаем новое значение
+        else:
+            if product_id_str in cart:
+                del cart[product_id_str]  # Если ввели 0 или меньше, удаляем товар
+
+        request.session['cart'] = cart
+
+    return redirect('store:cart')
+
+
 def order_create(request):
+    """Оформление заказа с валидацией остатков и блокировкой изменения почты"""
     cart = request.session.get('cart', {})
     if not cart:
         return redirect('store:catalog')
 
+    # ФИНАЛЬНАЯ ПРОВЕРКА: Не раскупили ли товар, пока клиент заполнял форму заказа
+    for p_id, quantity in cart.items():
+        product = get_object_or_404(Product, id=int(p_id))
+        if product.stock < quantity:
+            messages.error(
+                request,
+                f'Извините, пока вы оформляли заказ, товар "{product.name}" закончился или его осталось меньше. '
+                f'Доступно на складе: {product.stock} шт. Пожалуйста, измените состав корзины.'
+            )
+            return redirect('store:cart')
+
+    # Выделяем текущего пользователя для передачи в форму
+    current_user = request.user if request.user.is_authenticated else None
+
     if request.method == 'POST':
-        form = OrderCreateForm(request.POST)
+        # Передаем POST-данные и именованный аргумент user
+        form = OrderCreateForm(request.POST, user=current_user)
         if form.is_valid():
-            # Создаем объект заказа
             order = form.save(commit=False)
+
             if request.user.is_authenticated:
                 order.user = request.user
+                # Жесткая безопасность: принудительно пишем Email из аккаунта, игнорируя любые подмены
+                order.email = request.user.email
+
             order.save()
 
             # Переносим товары из корзины в OrderItem + списываем остатки со склада
@@ -378,7 +414,7 @@ def order_create(request):
             # Очищаем корзину после успешного заказа
             request.session['cart'] = {}
 
-            # --- НОВЫЙ БЛОК: ОТПРАВКА ПИСЬМА ПРИ ОФОРМЛЕНИИ ---
+            # --- БЛОК ОТПРАВКИ EMAIL УВЕДОМЛЕНИЯ КЛИЕНТУ ---
             if order.email:
                 subject = f'Ваш заказ №{order.id} успешно оформлен — Зоомагазин'
                 message = (
@@ -400,7 +436,6 @@ def order_create(request):
                         fail_silently=False,
                     )
                 except Exception as e:
-                    # При ошибке почты заказ не сбрасывается, он успешно оформлен
                     print(f"Ошибка отправки приветственного письма: {e}")
             # --- КОНЕЦ БЛОКА ОТПРАВКИ ---
 
@@ -415,7 +450,8 @@ def order_create(request):
                 'last_name': request.user.last_name,
                 'email': request.user.email,
             }
-        form = OrderCreateForm(initial=initial_data)
+        # Передаем аргумент user и в GET-запрос для корректного скрытия/блокировки поля на фронтенде
+        form = OrderCreateForm(initial=initial_data, user=current_user)
 
     return render(request, 'store/order_checkout.html', {'form': form})
 

@@ -32,24 +32,42 @@
         </ul>
 
         <div class="tab-content mt-4" id="profileTabsContent">
+
             <div class="tab-pane fade show active" id="orders">
                 {% if orders %}
                     {% for order in orders %}
                     <div class="card mb-3 shadow-sm border-0">
-                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                             <span class="fw-bold">Заказ №{{ order.id }} от {{ order.created_at|date:"d.m.Y" }}</span>
 
-                            {% if order.status == 'Новый' %}<span class="badge bg-primary">Новый</span>
-                            {% elif order.status == 'В обработке' %}<span class="badge bg-warning text-dark">В обработке</span>
-                            {% elif order.status == 'Выполнен' %}<span class="badge bg-success">Выполнен</span>
-                            {% else %}<span class="badge bg-secondary">{{ order.status }}</span>{% endif %}
+                            {% if order.status == 'in_progress' %}
+                                <span class="badge bg-warning text-dark px-3 py-2">В обработке</span>
+                            {% elif order.status == 'cancel_requested' %}
+                                <span class="badge bg-danger bg-opacity-25 text-danger px-3 py-2">⏳ Ожидает отмены</span>
+                            {% elif order.status == 'completed' %}
+                                <span class="badge bg-success px-3 py-2">Выполнен ✅</span>
+                            {% elif order.status == 'cancelled' %}
+                                <span class="badge bg-secondary px-3 py-2">Отменен ❌</span>
+                            {% else %}
+                                <span class="badge bg-primary px-3 py-2">{{ order.get_status_display }}</span>
+                            {% endif %}
                         </div>
                         <div class="card-body">
                             <p class="mb-1"><small><strong>Адрес доставки:</strong> {{ order.city }}, {{ order.address }}</small></p>
-                            <hr class="text-muted">
+                            <hr class="text-muted my-2">
                             <div class="d-flex justify-content-between align-items-center">
                                 <span class="text-muted small">Позиций: {{ order.items.count }}</span>
-                                <h5 class="text-primary mb-0">{{ order.get_total_cost }} руб.</h5>
+
+                                <div class="d-flex align-items-center gap-3">
+                                    {% if order.status == 'in_progress' %}
+                                        <a href="{% url 'store:request_order_cancel' order.id %}"
+                                           class="btn btn-sm btn-outline-danger fw-bold px-3"
+                                           onclick="return confirm('Вы действительно хотите отправить запрос на отмену этого заказа?');">
+                                            🛑 Запросить отмену
+                                        </a>
+                                    {% endif %}
+                                    <h5 class="text-primary mb-0 fw-bold">{{ order.get_total_cost }} руб.</h5>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -64,7 +82,7 @@
 
             <div class="tab-pane fade" id="pets">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">Карточки питомцев</h5>
+                    <h5 class="mb-0 fw-bold">Карточки питомцев</h5>
                     <a href="{% url 'store:add_pet' %}" class="btn btn-success btn-sm">+ Добавить питомца</a>
                 </div>
 
@@ -97,11 +115,12 @@
                                             </button>
                                         {% endif %}
                                     </div>
-                                    {% else %}
-                                        <div class="bg-light text-center border-bottom d-flex align-items-center justify-content-center" style="height: 200px;">
-                                            <span class="fs-1">🐾</span>
-                                        </div>
-                                    {% endif %}
+                                {% else %}
+                                    <div class="bg-light text-center border-bottom d-flex align-items-center justify-content-center" style="height: 200px;">
+                                        <span class="fs-1">🐾</span>
+                                    </div>
+                                {% endif %}
+
                                 <div class="card-body d-flex flex-column">
                                     <h5 class="card-title fw-bold text-primary">{{ pet.name }}</h5>
                                     <p class="card-text small mb-1"><strong>Вид:</strong> {{ pet.species }}</p>
@@ -125,6 +144,7 @@
                     </div>
                 {% endif %}
             </div>
+
         </div>
     </div>
 </div>

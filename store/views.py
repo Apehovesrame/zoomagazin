@@ -553,15 +553,60 @@ def delete_product(request, product_id):
     return render(request, 'store/delete_product.html', {'product': product})
 
 
+@login_required
+def request_order_cancel(request, order_id):
+    """Пользователь отправляет запрос на отмену заказа"""
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+
+    # Отменить можно только тот заказ, который еще не выполнен и не отменен
+    if order.status == 'in_progress':
+        order.status = 'cancel_requested'
+        order.save()
+        messages.warning(request, f'Запрос на отмену заказа №{order.id} отправлен администрации.')
+    else:
+        messages.error(request, 'Этот заказ нельзя отменить.')
+
+    return redirect('store:profile')
+
+
 @user_passes_test(is_store_admin, login_url='store:index')
 def manager_orders(request):
-    """Страница управления заказами для администратора"""
+    """Панель управления заказами для администратора с архивом и поиском"""
+
+    # 1. Получаем параметры фильтрации из GET-запроса
+    client_query = request.GET.get('client', '').strip()
+    date_query = request.GET.get('date', '')
+    status_query = request.GET.get('status', '')
+
+    # Base queryset
     orders = Order.objects.all().order_by('-created_at')
+
+    # 2. Применяем фильтры, если они указаны
+    if client_query:
+        orders = orders.filter(
+            Q(first_name__icontains=client_query) |
+            Q(last_name__icontains=client_query) |
+            Q(user__username__icontains=client_query)
+        )
+    if date_query:
+        orders = orders.filter(created_at__date=date_query)
+    if status_query:
+        orders = orders.filter(status=status_query)
+
+    # 3. РАЗДЕЛЕНИЕ НА АКТИВНЫЕ И АРХИВ (Выполненные и Отмененные улетают в архив)
+    active_orders = orders.exclude(status__in=['completed', 'cancelled'])
+    archived_orders = orders.filter(status__in=['completed', 'cancelled'])
+
+    # Список статусов для выпадающего списка в фильтрах
     status_choices = Order.STATUS_CHOICES
 
     return render(request, 'store/manager_orders.html', {
-        'orders': orders,
-        'status_choices': status_choices
+        'active_orders': active_orders,
+        'archived_orders': archived_orders,
+        'status_choices': status_choices,
+        'client_query': client_query,
+        'date_query': date_query,
+        'status_query': status_query,
     })
 
 

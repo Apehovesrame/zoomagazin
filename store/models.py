@@ -97,12 +97,13 @@ class Order(models.Model):
     paid = models.BooleanField('Оплачено', default=False)
 
     # Если хочешь оставить статусы:
-    STATUS_CHOICES = (
-        ('Новый', 'Новый'),
-        ('В обработке', 'В обработке'),
-        ('Выполнен', 'Выполнен'),
-    )
-    status = models.CharField('Статус', max_length=50, choices=STATUS_CHOICES, default='Новый')
+    STATUS_CHOICES = [
+        ('in_progress', 'В обработке'),
+        ('cancel_requested', 'Запрос на отмену ⚠️'),
+        ('completed', 'Выполнен ✅'),
+        ('cancelled', 'Отменен ❌'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='in_progress', verbose_name="Статус заказа")
 
     class Meta:
         verbose_name = 'Заказ'

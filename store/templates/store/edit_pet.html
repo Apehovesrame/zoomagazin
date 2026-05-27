@@ -13,24 +13,38 @@
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
 
-                    <div class="mb-4 text-center">
-                        <label class="d-block fw-bold text-muted small text-uppercase mb-2">Текущее фото питомца</label>
-                        {% if pet.image %}
-                            <img src="{{ pet.image.url }}" class="rounded shadow-sm border p-1" style="max-width: 180px; max-height: 180px; object-fit: cover;">
-                        {% else %}
-                            <div class="bg-light mx-auto rounded-circle d-flex align-items-center justify-content-center text-muted border" style="width: 120px; height: 120px; font-size: 2.5rem;">
-                                🐾
-                            </div>
-                        {% endif %}
-                    </div>
+                    {% if pet.images.all %}
+                        <div class="mb-4">
+                            <label class="form-label text-muted small text-uppercase fw-bold d-block mb-2">Уже загруженные фотографии:</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for img in pet.images.all %}
+                                    <div class="position-relative shadow-sm rounded border p-1 bg-white">
+                                        <img src="{{ img.image.url }}" class="rounded" style="width: 100px; height: 100px; object-fit: cover;">
 
-                    <div class="mb-3">
+                                        <a href="{% url 'store:delete_pet_image' img.id %}"
+                                           class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 lh-1 shadow-sm fw-bold border-white"
+                                           style="padding: 2px 6px; font-size: 0.75rem;"
+                                           onclick="return confirm('Вы действительно хотите безвозвратно удалить эту фотографию из профиля питомца?');"
+                                           title="Удалить фото">
+                                            ✖
+                                        </a>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <hr class="text-muted my-3">
+                    {% endif %}
+
+                    <div class="mb-3 position-relative">
                         {{ form.as_p }}
+                        <div id="custom-breed-dropdown" class="list-group shadow position-absolute w-100 mt-1 d-none" style="z-index: 1000; max-height: 200px; overflow-y: auto;"></div>
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label fw-bold small text-muted">Добавить еще фото в галерею:</label>
-                        <input type="file" name="images_input" multiple class="form-control form-control-sm">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Добавить еще фото в галерею:</label>
+                        <input type="file" name="images_input" multiple class="form-control form-control-sm" id="pet-image-upload">
+
+                        <div id="image-preview-container" class="d-flex flex-wrap gap-2 mt-3"></div>
                     </div>
 
                     <div class="d-flex justify-content-between mt-4 border-top pt-3">
@@ -43,66 +57,115 @@
     </div>
 </div>
 
-<datalist id="breed-options"></datalist>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Django по умолчанию дает полям формы ID формата "id_имяполя"
     const speciesField = document.getElementById('id_species');
     const breedField = document.getElementById('id_breed');
+    const dropdown = document.getElementById('custom-breed-dropdown');
 
-    if (!speciesField || !breedField) return;
+    if (!speciesField || !breedField || !dropdown) return;
 
-    // Словарь популярных пород (можешь добавлять сюда любые свои варианты)
+    // Расширенный словарь пород только для собак и кошек по алфавиту
     const breedsData = {
         'Собака': [
-            'Корги', 'Лабрадор-ретривер', 'Немецкая овчарка', 'Золотистый ретривер',
-            'Французский бульдог', 'Бульдог', 'Бигль', 'Пудель', 'Ротвейлер',
-            'Йоркширский терьер', 'Такса', 'Боксер', 'Сибирский хаски', 'Шпиц',
-            'Мопс', 'Доберман', 'Чихуахуа', 'Кокер-спаниель', 'Дворняжка'
+            'Акита-ину', 'Алабай', 'Аляскинский маламут', 'Американский стаффордширский терьер',
+            'Английский бульдог', 'Английский кокер-спаниель', 'Бигль', 'Боксер', 'Бордер-колли',
+            'Бультерьер', 'Вельш-корги', 'Далматин', 'Джек-рассел-терьер', 'Доберман',
+            'Дворняжка (метис)', 'Золотистый ретривер', 'Йоркширский терьер', 'Кавказская овчарка',
+            'Кане-корсо', 'Курцхаар', 'Лабрадор-ретривер', 'Мальтипу', 'Мальтийская болонка',
+            'Мопс', 'Немецкая овчарка', 'Немецкий дог', 'Пекинес', 'Питбуль', 'Померанский шпиц',
+            'Пудель', 'Ротвейлер', 'Самоедская собака', 'Сенбернар', 'Сиба-ину', 'Сибирский хаски',
+            'Такса', 'Той-терьер', 'Французский бульдог', 'Цвергшнауцер', 'Чау-чау', 'Чихуахуа',
+            'Шарпей', 'Ши-тцу', 'Шпиц'
         ],
         'Кошка': [
-            'Мейн-кун', 'Британская короткошерстная', 'Шотландская вислоухая',
-            'Сфинкс', 'Бенгальская', 'Сиамская', 'Персидская', 'Русская голубая',
-            'Рэгдолл', 'Абиссинская', 'Сибирская', 'Ориентальная', 'Беспородная'
-        ],
-        'Птица': [
-            'Волнистый попугай', 'Корелла', 'Канарейка', 'Неразлучник', 'Жако', 'Ара', 'Какаду'
-        ],
-        'Грызун': [
-            'Сирийский хомяк', 'Джунгарский хомяк', 'Морская свинка', 'Декоративная крыса',
-            'Шиншилла', 'Дегу', 'Песчанка'
+            'Абиссинская', 'Бенгальская', 'Беспородная (метис)', 'Британская длинношерстная',
+            'Британская короткошерстная', 'Бурманская', 'Девон-рекс', 'Донской сфинкс',
+            'Канадский сфинкс', 'Корниш-рекс', 'Курильский бобтейл', 'Мейн-кун',
+            'Невская маскарадная', 'Норвежская лесная', 'Ориентальная', 'Персидская',
+            'Русская голубая', 'Рэгдолл', 'Саванна', 'Священная бирма', 'Сиамская',
+            'Сибирская', 'Сомалийская', 'Тайская', 'Турецкая ангора',
+            'Шотландская вислоухая', 'Шотландская прямоухая', 'Экзотическая короткошерстная'
         ]
     };
 
-    // Привязываем datalist к полю породы
-    breedField.setAttribute('list', 'breed-options');
-    breedField.setAttribute('autocomplete', 'off'); // Отключаем стандартные подсказки браузера
+    breedField.setAttribute('autocomplete', 'off');
 
-    // Функция обновления списка пород
-    function updateDatalist() {
+    // Функция фильтрации пород строго по ПЕРВОЙ букве
+    function filterBreeds() {
         const selectedSpecies = speciesField.value;
-        const datalist = document.getElementById('breed-options');
-        datalist.innerHTML = ''; // Очищаем старые варианты
+        const query = breedField.value.toLowerCase().trim();
+        dropdown.innerHTML = '';
 
-        if (breedsData[selectedSpecies]) {
-            breedsData[selectedSpecies].forEach(breed => {
-                const option = document.createElement('option');
-                option.value = breed;
-                datalist.appendChild(option);
+        if (!selectedSpecies || !breedsData[selectedSpecies]) {
+            dropdown.classList.add('d-none');
+            return;
+        }
+
+        // Фильтруем с начала слова
+        const filtered = breedsData[selectedSpecies].filter(breed =>
+            breed.toLowerCase().startsWith(query)
+        );
+
+        if (filtered.length > 0 && document.activeElement === breedField) {
+            filtered.forEach(breed => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'list-group-item list-group-item-action py-2 small';
+                btn.textContent = breed;
+
+                btn.addEventListener('click', function() {
+                    breedField.value = breed;
+                    dropdown.classList.add('d-none');
+                });
+                dropdown.appendChild(btn);
             });
+            dropdown.classList.remove('d-none');
+        } else {
+            dropdown.classList.add('d-none');
         }
     }
 
-    // Запускаем при загрузке (полезно при редактировании)
-    updateDatalist();
+    breedField.addEventListener('input', filterBreeds);
+    breedField.addEventListener('focus', filterBreeds);
 
-    // Запускаем каждый раз, когда пользователь меняет вид животного
-    speciesField.addEventListener('change', function() {
-        updateDatalist();
-        breedField.value = ''; // Очищаем поле породы при смене вида, чтобы избежать ошибок
+    // Закрытие выпадающего меню при клике в пустую область
+    document.addEventListener('click', function(e) {
+        if (e.target !== breedField && e.target !== dropdown && !dropdown.contains(e.target)) {
+            dropdown.classList.add('d-none');
+        }
     });
+
+    speciesField.addEventListener('change', function() {
+        breedField.value = '';
+        dropdown.classList.add('d-none');
+    });
+
+    // --- ЛОГИКА МГНОВЕННОГО ПРЕДПРОСМОТРА НОВЫХ ФОТО ---
+    const imageInput = document.getElementById('pet-image-upload');
+    const previewContainer = document.getElementById('image-preview-container');
+
+    if (imageInput && previewContainer) {
+        imageInput.addEventListener('change', function() {
+            previewContainer.innerHTML = ''; // Очищаем старые превью перед новой партией
+
+            Array.from(this.files).forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = 'img-thumbnail shadow-sm';
+                        img.style.width = '100px';
+                        img.style.height = '100px';
+                        img.style.objectFit = 'cover';
+                        previewContainer.appendChild(img);
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+    }
 });
 </script>
-
 {% endblock %}

@@ -38,6 +38,7 @@ urlpatterns = [
     path('community/delete/<int:post_id>/', views.delete_post, name='delete_post'),
 
     path('pet/<int:pet_id>/', views.pet_detail, name='pet_detail'),
+    path('pet/image/<int:image_id>/delete/', views.delete_pet_image, name='delete_pet_image'),
 
     path('review/<int:review_id>/delete/', views.delete_review, name='delete_review'),
     path('review/<int:review_id>/reply/', views.reply_review, name='reply_review'),

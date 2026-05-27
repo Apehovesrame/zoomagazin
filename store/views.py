@@ -431,6 +431,23 @@ def add_pet(request):
 
 
 @login_required
+def delete_pet_image(request, image_id):
+    """Удаление конкретной фотографии питомца из галереи"""
+    image = get_object_or_404(ImageGallery, id=image_id)
+    pet = image.pet
+
+    # Безопасность: проверяем, что питомец принадлежит текущему пользователю
+    if pet.user != request.user:
+        messages.error(request, "У вас нет прав для удаления этого фото.")
+        return redirect('store:profile')
+
+    image.delete()
+    messages.success(request, 'Фотография питомца успешно удалена.')
+
+    # Возвращаем пользователя обратно на страницу редактирования
+    return redirect('store:edit_pet', pet_id=pet.id)
+
+@login_required
 def edit_pet(request, pet_id):
     # Достаем питомца, проверяя, что он принадлежит текущему пользователю
     pet = get_object_or_404(Pet, id=pet_id, user=request.user)

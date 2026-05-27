@@ -45,8 +45,10 @@
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">Фотографии питомца (можно несколько)</label>
-                        <input type="file" name="images_input" multiple class="form-control">
-                        <small class="text-muted">Загрузите лучшие снимки вашего любимца.</small>
+                        <input type="file" name="images_input" multiple class="form-control" id="pet-image-upload">
+                        <small class="text-muted d-block mb-2">Загрузите лучшие снимки вашего любимца.</small>
+
+                        <div id="image-preview-container" class="d-flex flex-wrap gap-2 mt-2"></div>
                     </div>
 
                     <div class="d-flex justify-content-between mt-4">
@@ -66,6 +68,30 @@ document.addEventListener('DOMContentLoaded', function() {
     const speciesField = document.getElementById('id_species');
     const breedField = document.getElementById('id_breed');
     const dropdown = document.getElementById('custom-breed-dropdown');
+    const imageInput = document.getElementById('pet-image-upload');
+    const previewContainer = document.getElementById('image-preview-container');
+
+    if (imageInput && previewContainer) {
+        imageInput.addEventListener('change', function() {
+            previewContainer.innerHTML = ''; // Очищаем контейнер от старых превью
+
+            Array.from(this.files).forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = 'img-thumbnail shadow-sm';
+                        img.style.width = '100px';
+                        img.style.height = '100px';
+                        img.style.objectFit = 'cover';
+                        previewContainer.appendChild(img);
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+    }
 
     if (!speciesField || !breedField || !dropdown) return;
 

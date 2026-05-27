@@ -703,6 +703,21 @@ def community(request):
         if form.is_valid():
             new_post = form.save(commit=False)
             new_post.author = request.user
+
+            # 1. Берем исходный текст, который ввел пользователь (например: "23456н6543 #Боб #Собака")
+            raw_text = new_post.text
+
+            # 2. Ищем все хештеги (поддерживаем и русский, и английский)
+            hashtags = re.findall(r'#([а-яА-ЯёЁa-zA-Z0-9_]+)', raw_text)
+
+            # 3. САМОЕ ГЛАВНОЕ: Удаляем хештеги из текста!
+            # Заменяем их на пустоту и убираем лишние пробелы по краям
+            cleaned_text = re.sub(r'#[а-яА-ЯёЁa-zA-Z0-9_]+', '', raw_text).strip()
+
+            # 4. Присваиваем посту очищенный текст ("23456н6543")
+            new_post.text = cleaned_text
+
+            # 5. И только ТЕПЕРЬ сохраняем пост в базу данных!
             new_post.save()
 
             # Логика загрузки нескольких фото
@@ -710,8 +725,7 @@ def community(request):
             for f in files:
                 ImageGallery.objects.create(post=new_post, image=f)
 
-            # АВТОМАТИЧЕСКИЙ ПАРСИНГ ХЕШТЕГОВ
-            hashtags = re.findall(r'#(\w+)', new_post.text)
+            # 6. Привязываем хештеги (чтобы появились синие кнопки снизу)
             for tag_name in hashtags:
                 tag, created = Tag.objects.get_or_create(name=tag_name.lower())
                 new_post.tags.add(tag)
@@ -722,7 +736,6 @@ def community(request):
         form = PostForm(user=request.user)
 
     # --- БЛОК СОРТИРОВКИ И ФИЛЬТРАЦИИ (GET) ---
-
     # 1. Читаем параметры фильтрации и сортировки из URL
     sort_param = request.GET.get('sort', 'newest')
     filter_param = request.GET.get('filter', 'all')
@@ -820,20 +833,29 @@ def delete_product_image(request, image_id):
 def edit_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)
 
-    # Защита: редактировать может ТОЛЬКО автор
     if post.author != request.user:
         messages.error(request, "У вас нет прав для редактирования этого поста.")
         return redirect('store:community')
 
+    # --- БЛОК ОБРАБОТКИ POST (СОЗДАНИЕ ПОСТА) ---
     if request.method == 'POST':
         form = PostForm(request.POST, instance=post)
         if form.is_valid():
-            form.save()
+            # Просто сохраняем обновленный текст
+            updated_post = form.save()
 
-            # Сохранение новых фото в галерею
+            # Ищем теги
+            hashtags = re.findall(r'#([а-яА-ЯёЁa-zA-Z0-9_]+)', updated_post.text)
+
+            # Очищаем старые связи и привязываем новые
+            updated_post.tags.clear()
+            for tag_name in hashtags:
+                tag_obj, _ = Tag.objects.get_or_create(name=tag_name.lower())
+                updated_post.tags.add(tag_obj)
+
             files = request.FILES.getlist('images_input')
             for f in files:
-                ImageGallery.objects.create(post=post, image=f)
+                ImageGallery.objects.create(post=updated_post, image=f)
 
             messages.success(request, "Пост успешно обновлен!")
             return redirect('store:community')
@@ -855,7 +877,6 @@ def delete_post(request, post_id):
         messages.error(request, "У вас нет прав для удаления этого поста.")
 
     return redirect('store:community')
-
 
 @user_passes_test(is_store_admin, login_url='store:index')
 def manager_report(request):

@@ -1,4 +1,5 @@
 {% extends 'store/base.html' %}
+{% load custom_filters %}
 
 {% block title %}Лента сообщества - Зоомагазин{% endblock %}
 
@@ -119,12 +120,13 @@
             </div>
 
             <div class="card-body">
-                <p class="fs-6 mb-3" style="white-space: pre-line;">{{ post.text }}</p>
+                <p class="fs-6 mb-3" style="white-space: pre-line;">{{ post.text|hide_hashtags }}</p>
 
                 {% if post.tags.all %}
                     <div class="mb-3">
                         {% for tag in post.tags.all %}
-                            <a href="{% url 'store:community' %}?tag={{ tag.name }}" class="text-decoration-none me-2 fw-bold text-primary">#{{ tag.name }}</a>
+                            <a href="{% url 'store:community' %}?tag={{ tag.name }}"
+                               class="text-decoration-none me-2 fw-bold text-primary">#{{ tag.name }}</a>
                         {% endfor %}
                     </div>
                 {% endif %}

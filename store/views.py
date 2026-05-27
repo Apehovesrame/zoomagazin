@@ -50,7 +50,7 @@ def catalog(request):
     products = Product.objects.annotate(
         avg_rating=Avg('reviews__rating'),
         review_count=Count('reviews', distinct=True)
-    )
+    ).filter(stock__gt=0)
 
     # 3. Применяем текстовый поиск
     if query:
@@ -307,6 +307,11 @@ def order_create(request):
                     price_at_purchase=product.price,
                     quantity=quantity
                 )
+                if product.stock >= quantity:
+                    product.stock -= quantity
+                else:
+                    product.stock = 0
+                product.save()
 
             # Очищаем корзину после успешного заказа
             request.session['cart'] = {}

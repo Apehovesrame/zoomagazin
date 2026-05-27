@@ -61,6 +61,8 @@ class Product(models.Model):
 
     brand = models.CharField(max_length=100, blank=True, null=True, verbose_name="Бренд")
 
+    stock = models.PositiveIntegerField(default=15, verbose_name="Количество на складе")
+
     image = models.ImageField('Фото товара', upload_to='products_images/', blank=True, null=True)
 
     # Поля для алгоритма подбора (актуально только для кормов)

@@ -103,15 +103,34 @@
                     </div>
                     <h5 class="card-title fw-bold">{{ product.name }}</h5>
 
-                    <div class="mb-2 d-flex align-items-center gap-2 small">
-                        {% if product.avg_rating %}
-                            <span class="text-warning fw-bold">⭐ {{ product.avg_rating|floatformat:1 }}</span>
-                            <span class="text-muted">💬 {{ product.review_count }} отзывов</span>
-                        {% else %}
-                            <span class="text-muted" style="font-size: 0.85rem;">Нет отзывов</span>
-                        {% endif %}
-                    </div>
-                    <p class="card-text text-muted small">{{ product.description|truncatechars:60 }}</p>
+                        <div class="mb-2 d-flex align-items-center gap-2 small">
+                            {% if product.avg_rating %}
+                                <span class="text-warning fw-bold">⭐ {{ product.avg_rating|floatformat:1 }}</span>
+                                <span class="text-muted">💬 {{ product.review_count }} отзывов</span>
+                            {% else %}
+                                <span class="text-muted" style="font-size: 0.85rem;">Нет отзывов</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3 mt-2">
+                            <div class="d-flex justify-content-between align-items-center small text-muted mb-1" style="font-size: 0.8rem;">
+                                <span>Остаток:
+                                    <strong class="{% if product.stock < 10 %}text-danger fw-bold{% else %}text-success{% endif %}">
+                                        {{ product.stock }} шт.
+                                    </strong>
+                                </span>
+                                {% if product.stock < 10 %}
+                                    <span class="badge bg-danger-subtle text-danger fw-bold" style="font-size: 0.7rem;">Мало!</span>
+                                {% endif %}
+                            </div>
+                            <div class="progress" style="height: 5px; bg-light">
+                                <div class="progress-bar {% if product.stock < 10 %}bg-danger{% else %}bg-success{% endif %}"
+                                     role="progressbar"
+                                     style="width: {% if product.stock < 10 %}30%{% elif product.stock < 20 %}60%{% else %}100%{% endif %}%;">
+                                </div>
+                            </div>
+                        </div>
+                        <p class="card-text text-muted small">{{ product.description|truncatechars:60 }}</p>
                     <div class="d-flex justify-content-between align-items-center mt-3">
                         <h4 class="text-primary mb-0">{{ product.price }} руб.</h4>
                         <span class="text-muted">→</span>

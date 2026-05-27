@@ -85,11 +85,29 @@
         </ul>
         {% endif %}
 
+        <div class="card p-3 bg-light border-0 rounded-3 mb-4">
+            <div class="d-flex justify-content-between align-items-center small mb-1">
+                <span class="text-muted fw-bold">Наличие на складе:</span>
+                <span class="fw-bold {% if product.stock < 10 %}text-danger{% else %}text-success{% endif %}">
+                    {{ product.stock }} шт.
+                </span>
+            </div>
+            <div class="progress" style="height: 6px;">
+                <div class="progress-bar {% if product.stock < 10 %}bg-danger{% else %}bg-success{% endif %}"
+                     role="progressbar"
+                     style="width: {% if product.stock < 10 %}25%{% elif product.stock < 25 %}60%{% else %}100%{% endif %}%;">
+                </div>
+            </div>
+            {% if product.stock < 10 %}
+                <small class="text-danger fw-bold mt-1" style="font-size: 0.8rem;">⚠️ Товар заканчивается, рекомендуем оформить заказ быстрее!</small>
+            {% endif %}
+        </div>
+
         <form action="{% url 'store:add_to_cart' product.id %}" method="POST" class="d-flex align-items-center mt-4">
             {% csrf_token %}
             <div class="input-group input-group-lg w-100">
                 <span class="input-group-text">Кол-во:</span>
-                <input type="number" name="quantity" value="1" min="1" class="form-control text-center" style="max-width: 100px;">
+                <input type="number" name="quantity" value="1" min="1" max="{{ product.stock }}" class="form-control text-center" style="max-width: 100px;">
                 <button type="submit" class="btn btn-success flex-grow-1">🛒 Добавить в корзину</button>
             </div>
         </form>

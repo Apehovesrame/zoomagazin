@@ -3,11 +3,37 @@ from django.contrib.auth.forms import UserCreationForm
 from .models import CustomUser
 from .models import Order
 from .models import Product, OrderItem, Pet, Post, Comment, Review
+from django.contrib.auth.models import User
+
 
 class CustomUserCreationForm(UserCreationForm):
-    class Meta(UserCreationForm.Meta):
-        model = CustomUser
-        fields = ('username', 'email', 'first_name', 'last_name')
+    class Meta:
+        model = User
+        # Перечисляем поля, которые хотим видеть при регистрации
+        fields = ('username', 'first_name', 'last_name', 'email')
+
+        # Переводим названия полей (лейблы) на русский
+        labels = {
+            'username': 'Никнейм',
+            'first_name': 'Имя',
+            'last_name': 'Фамилия',
+            'email': 'Электронная почта',
+        }
+
+        # Убираем дефолтную системную подсказку Django про 150 символов
+        help_texts = {
+            'username': '',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Ограничиваем максимальную длину никнейма до 30 символов
+        self.fields['username'].max_length = 30
+
+        # Автоматически добавляем CSS-класс всем полям для ровного столбика
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'form-control bg-light'
 
 class UserUpdateForm(forms.ModelForm):
     class Meta:

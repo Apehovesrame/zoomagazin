@@ -1,16 +1,54 @@
 {% extends 'store/base.html' %}
-{% block title %}Регистрация{% endblock %}
+
+{% block title %}Регистрация - Зоомагазин{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <h2 class="mb-4">Регистрация</h2>
-        <div class="card shadow-sm"><div class="card-body">
-            <form method="POST">
-                {% csrf_token %}
-                {{ form.as_p }}
-                <button type="submit" class="btn btn-primary w-100 mt-3">Зарегистрироваться</button>
-            </form>
-        </div></div>
+<div class="row justify-content-center mt-5 mb-5">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow border-0 rounded-4">
+            <div class="card-body p-5">
+                <h2 class="text-center fw-bold mb-4 text-primary">Регистрация 🐾</h2>
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger rounded-3 pb-0">
+                            {% for error in form.non_field_errors %}
+                                <p class="small fw-bold">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label fw-bold text-muted small text-uppercase mb-1">
+                                {{ field.label }}
+                            </label>
+
+                            {{ field }}
+
+                            {% if field.errors %}
+                                <div class="text-danger mt-1 small fw-bold">
+                                    {% for error in field.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    <button type="submit" class="btn btn-success w-100 btn-lg fw-bold mt-4 shadow-sm">
+                        Создать аккаунт
+                    </button>
+                </form>
+
+                <div class="text-center mt-4 pt-3 border-top">
+                    <span class="text-muted small">Уже есть профиль?</span>
+                    <a href="{% url 'store:index' %}" class="text-decoration-none fw-bold ms-1 text-primary">Вернуться на главную</a>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

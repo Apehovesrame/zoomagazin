@@ -148,4 +148,18 @@
         </div>
     </div>
 </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Проверяем, если в адресной строке есть #pets
+        if (window.location.hash === "#pets") {
+            // Находим кнопку вкладки питомцев
+            const petsTabButton = document.querySelector('button[data-bs-target="#pets"]');
+            if (petsTabButton) {
+                // Создаем инстанс вкладки Bootstrap и активируем её
+                const tab = new bootstrap.Tab(petsTabButton);
+                tab.show();
+            }
+        }
+    });
+</script>
 {% endblock %}

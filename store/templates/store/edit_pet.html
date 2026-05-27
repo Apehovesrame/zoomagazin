@@ -42,4 +42,67 @@
         </div>
     </div>
 </div>
+
+<datalist id="breed-options"></datalist>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Django по умолчанию дает полям формы ID формата "id_имяполя"
+    const speciesField = document.getElementById('id_species');
+    const breedField = document.getElementById('id_breed');
+
+    if (!speciesField || !breedField) return;
+
+    // Словарь популярных пород (можешь добавлять сюда любые свои варианты)
+    const breedsData = {
+        'Собака': [
+            'Корги', 'Лабрадор-ретривер', 'Немецкая овчарка', 'Золотистый ретривер',
+            'Французский бульдог', 'Бульдог', 'Бигль', 'Пудель', 'Ротвейлер',
+            'Йоркширский терьер', 'Такса', 'Боксер', 'Сибирский хаски', 'Шпиц',
+            'Мопс', 'Доберман', 'Чихуахуа', 'Кокер-спаниель', 'Дворняжка'
+        ],
+        'Кошка': [
+            'Мейн-кун', 'Британская короткошерстная', 'Шотландская вислоухая',
+            'Сфинкс', 'Бенгальская', 'Сиамская', 'Персидская', 'Русская голубая',
+            'Рэгдолл', 'Абиссинская', 'Сибирская', 'Ориентальная', 'Беспородная'
+        ],
+        'Птица': [
+            'Волнистый попугай', 'Корелла', 'Канарейка', 'Неразлучник', 'Жако', 'Ара', 'Какаду'
+        ],
+        'Грызун': [
+            'Сирийский хомяк', 'Джунгарский хомяк', 'Морская свинка', 'Декоративная крыса',
+            'Шиншилла', 'Дегу', 'Песчанка'
+        ]
+    };
+
+    // Привязываем datalist к полю породы
+    breedField.setAttribute('list', 'breed-options');
+    breedField.setAttribute('autocomplete', 'off'); // Отключаем стандартные подсказки браузера
+
+    // Функция обновления списка пород
+    function updateDatalist() {
+        const selectedSpecies = speciesField.value;
+        const datalist = document.getElementById('breed-options');
+        datalist.innerHTML = ''; // Очищаем старые варианты
+
+        if (breedsData[selectedSpecies]) {
+            breedsData[selectedSpecies].forEach(breed => {
+                const option = document.createElement('option');
+                option.value = breed;
+                datalist.appendChild(option);
+            });
+        }
+    }
+
+    // Запускаем при загрузке (полезно при редактировании)
+    updateDatalist();
+
+    // Запускаем каждый раз, когда пользователь меняет вид животного
+    speciesField.addEventListener('change', function() {
+        updateDatalist();
+        breedField.value = ''; // Очищаем поле породы при смене вида, чтобы избежать ошибок
+    });
+});
+</script>
+
 {% endblock %}

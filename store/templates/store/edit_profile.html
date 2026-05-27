@@ -2,20 +2,57 @@
 {% block title %}Редактирование профиля{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-6">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">Настройки профиля</h4>
+<div class="row justify-content-center mt-5 mb-5">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-lg border-0 rounded-4">
+            <div class="card-header bg-primary text-white text-center py-4 rounded-top-4 border-0">
+                <h4 class="mb-0 fw-bold">Редактирование профиля</h4>
             </div>
-            <div class="card-body p-4">
+            <div class="card-body p-4 p-md-5">
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
-                    {{ form.as_p }}
-                    <div class="d-flex justify-content-between mt-4">
-                        <a href="{% url 'store:profile' %}" class="btn btn-outline-secondary">Отмена</a>
-                        <button type="submit" class="btn btn-primary">Сохранить</button>
+
+                    <!-- Блок Аватара -->
+                    <div class="mb-4 text-center">
+                        <label class="form-label fw-bold small text-muted text-uppercase mb-2 d-block">Аватар</label>
+                        {% if user.avatar %}
+                            <img src="{{ user.avatar.url }}" class="rounded-circle shadow mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                            <!-- Кнопка удаления (ссылается на delete_avatar, который мы создали ранее) -->
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                        onclick="if(confirm('Удалить фото профиля?')) { document.getElementById('delete-avatar-form').submit(); }">
+                                    ❌ Удалить фото
+                                </button>
+                            </div>
+                        {% else %}
+                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 shadow" style="width: 150px; height: 150px;">
+                                <span class="text-white fs-1">{{ user.username|make_list|first|upper }}</span>
+                            </div>
+                        {% endif %}
+                        {{ form.avatar }}
                     </div>
+
+                    <!-- Остальные поля -->
+                    {% for field in form %}
+                        {% if field.name != 'avatar' %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label fw-bold small text-muted text-uppercase mb-1">
+                                    {{ field.label }}
+                                </label>
+                                {{ field }}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'store:profile' %}" class="btn btn-outline-secondary px-4 fw-bold">Отмена</a>
+                        <button type="submit" class="btn btn-primary px-4 fw-bold shadow">Сохранить</button>
+                    </div>
+                </form>
+
+                <!-- Скрытая форма для удаления аватара -->
+                <form id="delete-avatar-form" action="{% url 'store:delete_avatar' %}" method="post" style="display: none;">
+                    {% csrf_token %}
                 </form>
             </div>
         </div>

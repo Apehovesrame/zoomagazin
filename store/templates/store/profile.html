@@ -1,5 +1,5 @@
 {% extends 'store/base.html' %}
-{% block title %}Личный кабинет{% endblock %}
+{% block title %}Личный кабинет - Зоомагазин{% endblock %}
 
 {% block content %}
 <div class="row mt-4">
@@ -104,7 +104,19 @@
                     <div class="row row-cols-1 row-cols-md-2 g-4">
                         {% for pet in pets %}
                         <div class="col">
-                            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden product-card">
+                            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden product-card position-relative">
+
+                                <div class="position-absolute top-0 end-0 m-2 d-flex gap-1" style="z-index: 10;">
+                                    <a href="{% url 'store:edit_pet' pet.id %}" class="btn btn-light btn-sm shadow-sm border text-decoration-none" title="Редактировать">
+                                        ✏️
+                                    </a>
+                                    <form method="post" action="{% url 'store:delete_pet' pet.id %}" class="m-0" onsubmit="return confirm('Вы точно хотите удалить питомца {{ pet.name }}? Это действие нельзя отменить.');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-light btn-sm shadow-sm border text-danger" title="Удалить">
+                                            🗑️
+                                        </button>
+                                    </form>
+                                </div>
 
                                 {% if pet.images.all %}
                                     <div id="carouselPet{{ pet.id }}" class="carousel slide" data-bs-ride="carousel">
@@ -142,22 +154,9 @@
                                         <p class="card-text small mb-0"><strong>Активность:</strong> {{ pet.activity_level }}</p>
                                     </div>
 
-                                    <a href="{% url 'store:smart_catalog' pet.id %}" class="btn btn-sm btn-success w-100 mt-auto mb-2 fw-bold shadow-sm">
+                                    <a href="{% url 'store:smart_catalog' pet.id %}" class="btn btn-sm btn-success w-100 mt-auto fw-bold shadow-sm">
                                         🎯 Помощник по подбору корма
                                     </a>
-
-                                    <div class="d-flex gap-2">
-                                        <a href="{% url 'store:edit_pet' pet.id %}" class="btn btn-sm btn-outline-primary w-50 fw-bold">
-                                            ✏️ Изменить
-                                        </a>
-                                        <form method="post" action="{% url 'store:delete_pet' pet.id %}" class="w-50 m-0" onsubmit="return confirm('Вы точно хотите удалить питомца {{ pet.name }}? Это действие нельзя отменить.');">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-sm btn-outline-danger w-100 fw-bold">
-                                                🗑️ Удалить
-                                            </button>
-                                        </form>
-                                    </div>
-
                                 </div>
                             </div>
                         </div>

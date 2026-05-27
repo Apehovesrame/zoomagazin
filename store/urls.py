@@ -21,6 +21,7 @@ urlpatterns = [
     path('catalog/smart/<int:pet_id>/', views.smart_catalog, name='smart_catalog'),
 
     path('profile/edit-pet/<int:pet_id>/', views.edit_pet, name='edit_pet'),
+    path('profile/delete-avatar/', views.delete_avatar, name='delete_avatar'),
 
     path('manager/', views.manager_dashboard, name='manager_dashboard'),
     path('manager/product/add/', views.add_product, name='add_product'),

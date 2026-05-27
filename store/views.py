@@ -24,6 +24,7 @@ from django.utils import timezone
 from .forms import OrderCancelForm
 
 
+
 def index(request):
     """Главная страница магазина"""
     latest_products = Product.objects.annotate(
@@ -273,6 +274,19 @@ def edit_profile(request):
 
     return render(request, 'store/edit_profile.html', {'form': form})
 
+
+@login_required
+def delete_avatar(request):
+    if request.method == 'POST':
+        user = request.user
+        if user.avatar:
+            # Удаляем файл с сервера
+            user.avatar.delete()
+            # Обнуляем поле в базе
+            user.avatar = None
+            user.save()
+            messages.success(request, 'Аватар успешно удален.')
+    return redirect('store:edit_profile')
 
 def remove_from_cart(request, product_id):
     """Удаление товара из корзины"""

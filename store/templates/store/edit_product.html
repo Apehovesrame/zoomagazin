@@ -1,5 +1,5 @@
 {% extends 'store/base.html' %}
-{% block title %}Добавление товара{% endblock %}
+{% block title %}Редактирование товара{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center mt-4">
@@ -30,9 +30,15 @@
                                     {% endfor %}
                                 </datalist>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Цена (руб.)</label>
-                                {{ form.price }}
+                            <div class="row mb-3">
+                                <div class="col">
+                                    <label class="form-label fw-bold">Цена (руб.)</label>
+                                    {{ form.price }}
+                                </div>
+                                <div class="col">
+                                    <label class="form-label fw-bold">Количество 📦</label>
+                                    {{ form.stock }}
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Текущие фото:</label>

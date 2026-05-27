@@ -19,6 +19,8 @@ from django.http import JsonResponse
 from django.db.models import Avg, Count, F
 from django.core.mail import send_mail
 from django.conf import settings
+import datetime
+from django.utils import timezone
 
 
 def index(request):
@@ -853,3 +855,58 @@ def delete_post(request, post_id):
         messages.error(request, "У вас нет прав для удаления этого поста.")
 
     return redirect('store:community')
+
+
+@user_passes_test(is_store_admin, login_url='store:index')
+def manager_report(request):
+    """Генерация отчета о продажах с графиками"""
+
+    # По умолчанию берем период за последние 30 дней
+    today = timezone.now().date()
+    default_start = today - datetime.timedelta(days=30)
+
+    # Получаем даты из запроса или берем дефолтные
+    start_date_str = request.GET.get('start_date', default_start.strftime('%Y-%m-%d'))
+    end_date_str = request.GET.get('end_date', today.strftime('%Y-%m-%d'))
+
+    # Преобразуем строки обратно в объекты дат
+    start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+    end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date()
+
+    # Берем ТОЛЬКО ВЫПОЛНЕННЫЕ заказы за этот период
+    orders = Order.objects.filter(
+        status='completed',
+        created_at__gte=start_date,
+        created_at__lt=end_date + datetime.timedelta(days=1)
+    )
+
+    # Подготавливаем структуру для графика: список дней с нулевой выручкой
+    daily_stats = {}
+    delta = end_date - start_date
+    for i in range(delta.days + 1):
+        day = start_date + datetime.timedelta(days=i)
+        daily_stats[day.strftime('%d.%m')] = {'revenue': 0, 'count': 0}
+
+    # Наполняем структуру реальными данными
+    for order in orders:
+        day_str = order.created_at.strftime('%d.%m')
+        if day_str in daily_stats:
+            daily_stats[day_str]['revenue'] += order.get_total_cost()
+            daily_stats[day_str]['count'] += 1
+
+    # Разбиваем словари на списки для передачи в JavaScript
+    dates = list(daily_stats.keys())
+    revenues = [stats['revenue'] for stats in daily_stats.values()]
+    counts = [stats['count'] for stats in daily_stats.values()]
+
+    context = {
+        'start_date': start_date_str,
+        'end_date': end_date_str,
+        'total_revenue': sum(revenues),
+        'total_orders': sum(counts),
+        'dates': dates,
+        'revenues': revenues,
+        'counts': counts,
+    }
+
+    return render(request, 'store/manager_report.html', context)

@@ -91,6 +91,26 @@
     </div>
 
     <div class="tab-pane fade" id="archivedOrders" role="tabpanel">
+
+        <div class="card shadow-sm border-0 bg-light mb-3">
+            <div class="card-body py-3">
+                <form action="{% url 'store:manager_report' %}" method="get" class="row g-3 align-items-end">
+                    <div class="col-auto">
+                        <label class="form-label small fw-bold text-muted mb-1">Начало периода</label>
+                        <input type="date" name="start_date" class="form-control form-control-sm" required>
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label small fw-bold text-muted mb-1">Конец периода</label>
+                        <input type="date" name="end_date" class="form-control form-control-sm" required>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-sm btn-success fw-bold px-3">
+                            📊 Сформировать отчет за период
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
         <div class="card shadow-sm border-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0 opacity-75">

@@ -1,0 +1,97 @@
+{% extends 'store/base.html' %}
+{% block title %}Финансовый отчет{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>📈 Отчет о продажах</h2>
+    <a href="{% url 'store:manager_orders' %}" class="btn btn-outline-secondary">Вернуться к заказам</a>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title opacity-75">Общая выручка</h5>
+                <h2 class="fw-bold">{{ total_revenue }} руб.</h2>
+                <p class="mb-0 small">За период: {{ start_date }} — {{ end_date }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title opacity-75">Успешных заказов</h5>
+                <h2 class="fw-bold">{{ total_orders }} шт.</h2>
+                <p class="mb-0 small">За период: {{ start_date }} — {{ end_date }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-5">
+    <div class="card-body">
+        <h5 class="fw-bold mb-4">Динамика выручки по дням</h5>
+        <canvas id="revenueChart" height="100"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    
+    // Получаем данные из контекста Django и преобразуем их в безопасный JS-формат
+    const labels = {{ dates|safe }};
+    const revenueData = {{ revenues|safe }};
+    const ordersData = {{ counts|safe }};
+
+    new Chart(ctx, {
+        type: 'line', // Линейный график
+        data: {
+            labels: labels, // Даты внизу
+            datasets: [
+                {
+                    label: 'Выручка (руб.)',
+                    data: revenueData,
+                    borderColor: '#198754', // Зеленый цвет Bootstrap (success)
+                    backgroundColor: 'rgba(25, 135, 84, 0.2)',
+                    borderWidth: 3,
+                    tension: 0.3, // Сглаживание линии
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Кол-во заказов',
+                    data: ordersData,
+                    type: 'bar', // Заказы выводим столбиками на этом же графике!
+                    backgroundColor: 'rgba(13, 110, 253, 0.4)', // Синий (primary)
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: { display: true, text: 'Выручка (руб.)' }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: { display: true, text: 'Заказы (шт.)' },
+                    grid: { drawOnChartArea: false } // Убираем заднюю сетку для второй оси
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

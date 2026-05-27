@@ -11,7 +11,7 @@
             <div class="card-body p-4">
                 <p class="text-muted mb-4">Пожалуйста, проверьте ваши контактные данные. На этот email придет чек и информация о статусе доставки.</p>
 
-                <form method="post">
+                <form method="post" id="checkout-form">
                     {% csrf_token %}
 
                     {% for field in form %}
@@ -29,7 +29,7 @@
 
                     <div class="d-flex justify-content-between align-items-center mt-5">
                         <a href="{% url 'store:cart' %}" class="btn btn-outline-secondary">← Вернуться в корзину</a>
-                        <button type="submit" class="btn btn-success btn-lg px-4 shadow-sm">Подтвердить заказ</button>
+                        <button type="submit" id="submit-btn" class="btn btn-success btn-lg px-4 shadow-sm">Подтвердить заказ</button>
                     </div>
                 </form>
             </div>
@@ -39,12 +39,26 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        // 1. Твой скрипт для автоматического добавления стилей Bootstrap
         let inputs = document.querySelectorAll("input");
         inputs.forEach(function(input) {
             if (input.type !== "hidden" && input.type !== "submit") {
                 input.classList.add("form-control");
             }
         });
+
+        // 2. ИСПРАВЛЕНО: Логика мгновенной блокировки кнопки после первого нажатия
+        const form = document.getElementById('checkout-form');
+        const submitBtn = document.getElementById('submit-btn');
+
+        if (form && submitBtn) {
+            form.addEventListener('submit', function() {
+                // Блокируем кнопку, делая её некликабельной
+                submitBtn.disabled = true;
+                // Добавляем красивый спиннер загрузки Bootstrap вместо обычного текста
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Обработка...';
+            });
+        }
     });
 </script>
 {% endblock %}

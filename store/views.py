@@ -450,8 +450,11 @@ def order_create(request):
                 'first_name': request.user.first_name,
                 'last_name': request.user.last_name,
                 'email': request.user.email,
+                # НОВОЕ: Подтягиваем город и адрес из профиля
+                'city': getattr(request.user, 'city', ''),
+                'address': getattr(request.user, 'address', ''),
             }
-        # Передаем аргумент user и в GET-запрос для корректного скрытия/блокировки поля на фронтенде
+
         form = OrderCreateForm(initial=initial_data, user=current_user)
 
     return render(request, 'store/order_checkout.html', {'form': form})
@@ -478,6 +481,19 @@ def add_pet(request):
         form = PetForm()
     return render(request, 'store/add_pet.html', {'form': form})
 
+
+@login_required
+def delete_pet(request, pet_id):
+    """Удаление питомца из профиля"""
+    # Ищем питомца, строго проверяя, что он принадлежит текущему пользователю
+    pet = get_object_or_404(Pet, id=pet_id, owner=request.user)
+
+    # Сохраняем имя для красивого уведомления
+    pet_name = pet.name
+    pet.delete()
+
+    messages.success(request, f'Питомец "{pet_name}" успешно удален из вашего профиля.')
+    return redirect('store:profile')
 
 @login_required
 def delete_pet_image(request, image_id):

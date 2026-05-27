@@ -42,18 +42,6 @@ class CustomUserCreationForm(UserCreationForm):
             )
         return email
 
-class UserUpdateForm(forms.ModelForm):
-    class Meta:
-        model = CustomUser
-        fields = ('username', 'email', 'first_name', 'last_name')
-        widgets = {
-            'username': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
-        }
-
-
 class OrderCreateForm(forms.ModelForm):
     class Meta:
         model = Order
@@ -133,12 +121,20 @@ class PetForm(forms.ModelForm):
 class UserUpdateForm(forms.ModelForm):
     class Meta:
         model = CustomUser
-        fields = ['first_name', 'last_name', 'email', 'avatar']
+        # Добавили city и address
+        fields = ['first_name', 'last_name', 'email', 'avatar', 'city', 'address']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Имя'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Фамилия'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email'}),
             'avatar': forms.FileInput(attrs={'class': 'form-control'}),
+            # Виджеты для новых полей адреса
+            'city': forms.TextInput(attrs={'class': 'form-control bg-light', 'placeholder': 'Например: Москва'}),
+            'address': forms.TextInput(attrs={'class': 'form-control bg-light', 'placeholder': 'Например: ул. Пушкина, д. 10, кв. 5'}),
+        }
+        labels = {
+            'city': 'Город по умолчанию',
+            'address': 'Адрес доставки по умолчанию',
         }
 
 

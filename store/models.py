@@ -12,8 +12,11 @@ class CustomUser(AbstractUser):
         ('admin', 'Администратор'),
     )
     role = models.CharField('Роль', max_length=20, choices=ROLE_CHOICES, default='client')
-
     avatar = models.ImageField('Аватар', upload_to='users_avatars/', blank=True, null=True)
+
+    # --- НОВЫЕ ПОЛЯ ДЛЯ АВТОЗАПОЛНЕНИЯ ЗАКАЗОВ ---
+    city = models.CharField('Город', max_length=100, blank=True, null=True)
+    address = models.CharField('Адрес доставки', max_length=250, blank=True, null=True)
 
     class Meta:
         verbose_name = 'Пользователь'
@@ -21,7 +24,6 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return self.username
-
 
 # 2. ПИТОМЦЫ
 class Pet(models.Model):

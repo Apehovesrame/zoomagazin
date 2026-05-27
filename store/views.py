@@ -327,7 +327,6 @@ def view_cart(request):
     return render(request, 'store/cart.html', context)
 
 
-
 def order_create(request):
     cart = request.session.get('cart', {})
     if not cart:
@@ -336,13 +335,13 @@ def order_create(request):
     if request.method == 'POST':
         form = OrderCreateForm(request.POST)
         if form.is_valid():
-            # Создаем объект заказа, но пока не сохраняем в БД (commit=False)
+            # Создаем объект заказа
             order = form.save(commit=False)
             if request.user.is_authenticated:
                 order.user = request.user
             order.save()
 
-            # Переносим товары из корзины в OrderItem
+            # Переносим товары из корзины в OrderItem + списываем остатки со склада
             for p_id, quantity in cart.items():
                 product = get_object_or_404(Product, id=int(p_id))
                 OrderItem.objects.create(
@@ -351,6 +350,8 @@ def order_create(request):
                     price_at_purchase=product.price,
                     quantity=quantity
                 )
+
+                # Списание остатков
                 if product.stock >= quantity:
                     product.stock -= quantity
                 else:
@@ -359,6 +360,32 @@ def order_create(request):
 
             # Очищаем корзину после успешного заказа
             request.session['cart'] = {}
+
+            # --- НОВЫЙ БЛОК: ОТПРАВКА ПИСЬМА ПРИ ОФОРМЛЕНИИ ---
+            if order.email:
+                subject = f'Ваш заказ №{order.id} успешно оформлен — Зоомагазин'
+                message = (
+                    f'Здравствуйте, {order.first_name}!\n\n'
+                    f'Спасибо за ваш заказ в нашем зоомагазине!\n'
+                    f'Номер вашего заказа: {order.id}.\n'
+                    f'Сумма заказа: {order.get_total_cost()} руб.\n\n'
+                    f'Ваш заказ принят в работу. Мы пришлем вам уведомление, когда его статус изменится.\n'
+                    f'Отслеживать статус заказа можно в вашем личном кабинете.'
+                )
+                try:
+                    from django.core.mail import send_mail
+                    from django.conf import settings
+                    send_mail(
+                        subject=subject,
+                        message=message,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[order.email],
+                        fail_silently=False,
+                    )
+                except Exception as e:
+                    # При ошибке почты заказ не сбрасывается, он успешно оформлен
+                    print(f"Ошибка отправки приветственного письма: {e}")
+            # --- КОНЕЦ БЛОКА ОТПРАВКИ ---
 
             messages.success(request, 'Заказ успешно оформлен!')
             return render(request, 'store/order_created.html', {'order': order})

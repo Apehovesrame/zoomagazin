@@ -96,6 +96,28 @@ class Order(models.Model):
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
     paid = models.BooleanField('Оплачено', default=False)
 
+    # Варианты причин отмены
+    CANCEL_REASON_CHOICES = [
+        ('changed_mind', 'Передумал(а) покупать'),
+        ('found_cheaper', 'Нашел(ла) дешевле в другом месте'),
+        ('long_delivery', 'Не устраивают сроки доставки'),
+        ('ordered_by_mistake', 'Ошибся(лась) при оформлении заказа'),
+        ('other', 'Другая причина'),
+    ]
+
+    cancel_reason = models.CharField(
+        max_length=50,
+        choices=CANCEL_REASON_CHOICES,
+        blank=True,
+        null=True,
+        verbose_name='Причина отмены'
+    )
+    cancel_reason_text = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name='Комментарий к отмене'
+    )
+
     # Если хочешь оставить статусы:
     STATUS_CHOICES = [
         ('in_progress', 'В обработке'),

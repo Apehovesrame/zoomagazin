@@ -21,6 +21,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 import datetime
 from django.utils import timezone
+from .forms import OrderCancelForm
 
 
 def index(request):
@@ -654,18 +655,34 @@ def delete_product(request, product_id):
 
 @login_required
 def request_order_cancel(request, order_id):
-    """Пользователь отправляет запрос на отмену заказа"""
+    """Страница опросника и отправка запроса на отмену заказа"""
     order = get_object_or_404(Order, id=order_id, user=request.user)
 
-    # Отменить можно только тот заказ, который еще не выполнен и не отменен
-    if order.status == 'in_progress':
-        order.status = 'cancel_requested'
-        order.save()
-        messages.warning(request, f'Запрос на отмену заказа №{order.id} отправлен администрации.')
-    else:
-        messages.error(request, 'Этот заказ нельзя отменить.')
+    # Защита: отменить можно только заказ, который еще в работе
+    if order.status != 'in_progress':
+        messages.error(request, 'Этот заказ сейчас нельзя отменить.')
+        return redirect('store:profile')
 
-    return redirect('store:profile')
+    if request.method == 'POST':
+        # Создаем форму, привязанную к конкретному объекту заказа (instance=order)
+        form = OrderCancelForm(request.POST, instance=order)
+        if form.is_valid():
+            # Сохраняем причину отмены и меняем статус заказа
+            order = form.save(commit=False)
+            order.status = 'cancel_requested'
+            order.save()
+
+            messages.warning(request,
+                             f'Запрос на отмену заказа №{order.id} отправлен администрации. Спасибо, что объяснили причину!')
+            return redirect('store:profile')
+    else:
+        # При первом заходе на страницу создаем пустую форму
+        form = OrderCancelForm(instance=order)
+
+    return render(request, 'store/order_cancel.html', {
+        'form': form,
+        'order': order
+    })
 
 
 @user_passes_test(is_store_admin, login_url='store:index')

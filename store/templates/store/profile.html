@@ -61,8 +61,7 @@
                                 <div class="d-flex align-items-center gap-3">
                                     {% if order.status == 'in_progress' %}
                                         <a href="{% url 'store:request_order_cancel' order.id %}"
-                                           class="btn btn-sm btn-outline-danger fw-bold px-3"
-                                           onclick="return confirm('Вы действительно хотите отправить запрос на отмену этого заказа?');">
+                                           class="btn btn-sm btn-outline-danger fw-bold px-3">
                                             🛑 Запросить отмену
                                         </a>
                                     {% endif %}

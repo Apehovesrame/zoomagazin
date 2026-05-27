@@ -229,3 +229,25 @@ class ReviewForm(forms.ModelForm):
                 'placeholder': 'Поделитесь впечатлениями о товаре. Что понравилось, а что нет?'
             }),
         }
+
+class OrderCancelForm(forms.ModelForm):
+    class Meta:
+        model = Order
+        fields = ['cancel_reason', 'cancel_reason_text']
+        widgets = {
+            'cancel_reason': forms.RadioSelect(attrs={'class': 'form-check-input'}),
+            'cancel_reason_text': forms.Textarea(attrs={
+                'class': 'form-control bg-light',
+                'rows': 3,
+                'placeholder': 'Напишите подробнее (по желанию)...'
+            }),
+        }
+        labels = {
+            'cancel_reason': 'Почему вы решили отменить заказ?',
+            'cancel_reason_text': 'Дополнительный комментарий (необязательно)'
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Делаем выбор причины обязательным
+        self.fields['cancel_reason'].required = True

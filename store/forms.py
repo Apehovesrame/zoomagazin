@@ -58,6 +58,7 @@ class OrderCreateForm(forms.ModelForm):
             'city': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Москва'}),
         }
 
+
 class PetForm(forms.ModelForm):
     class Meta:
         model = Pet
@@ -65,10 +66,17 @@ class PetForm(forms.ModelForm):
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Кличка'}),
             'species': forms.Select(attrs={'class': 'form-select'}),
-            'breed': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Например: Корги, Мейн-кун или Без породы'}),
+            'breed': forms.TextInput(
+                attrs={'class': 'form-control', 'placeholder': 'Например: Корги, Мейн-кун или Без породы'}),
             'image': forms.FileInput(attrs={'class': 'form-control'}),
             'age_group': forms.Select(attrs={'class': 'form-select'}),
-            'weight': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
+
+            'weight': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.1',
+                'min': '0.1',
+                'max': '150'
+            }),
             'activity_level': forms.Select(attrs={'class': 'form-select'}),
         }
 

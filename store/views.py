@@ -39,13 +39,15 @@ def user_logout(request):
 
 
 def catalog(request):
-    """Каталог товаров с поиском, категориями, брендами, сортировкой и умным подбором"""
+    """Каталог товаров с поиском, категориями, брендами, ценой, сортировкой и умным подбором"""
 
     # 1. Сбор базовых параметров из GET-запроса
     query = request.GET.get('q', '')
     selected_category = request.GET.get('category', '')
-    selected_brand = request.GET.get('brand', '')  # НОВОЕ: бренд
-    sort_by = request.GET.get('sort', 'newest')  # НОВОЕ: сортировка
+    selected_brands = request.GET.getlist('brand')  # ТЕПЕРЬ ЭТО СПИСОК (для галочек)
+    sort_by = request.GET.get('sort', 'popular')  # ПОПУЛЯРНОЕ ПО УМОЛЧАНИЮ
+    min_price = request.GET.get('min_price', '')  # МИН. ЦЕНА
+    max_price = request.GET.get('max_price', '')  # МАКС. ЦЕНА
 
     # Параметры умного подбора
     species = request.GET.get('species')
@@ -63,13 +65,19 @@ def catalog(request):
     if query:
         products = products.filter(Q(name__icontains=query))
 
-    # 4. Применяем фильтр по категориям и брендам
+    # 4. Применяем фильтры по категориям, БРЕНДАМ и ЦЕНЕ
     if selected_category:
         products = products.filter(category=selected_category)
-    if selected_brand:  # НОВОЕ: фильтрация по бренду
-        products = products.filter(brand=selected_brand)
 
-    # 5. Алгоритм Умного подбора (твоя логика без изменений)
+    if selected_brands:
+        products = products.filter(brand__in=selected_brands)  # Поиск по нескольким брендам сразу
+
+    if min_price:
+        products = products.filter(price__gte=min_price)  # Цена ОТ
+    if max_price:
+        products = products.filter(price__lte=max_price)  # Цена ДО
+
+    # 5. Алгоритм Умного подбора
     if species or age or weight or activity:
         if species:
             products = products.filter(
@@ -89,22 +97,24 @@ def catalog(request):
             except ValueError:
                 pass
 
-    # 6. НОВОЕ: Применяем сортировку контента
-    if sort_by == 'price_asc':
+    # 6. Применяем сортировку контента
+    if sort_by == 'newest':
+        products = products.order_by('-id')
+    elif sort_by == 'price_asc':
         products = products.order_by('price')
     elif sort_by == 'price_desc':
         products = products.order_by('-price')
     elif sort_by == 'rating':
-        # Сортируем по рейтингу. Сначала высокие, товары без рейтинга (NULL) — в самый конец
         products = products.order_by(F('avg_rating').desc(nulls_last=True), '-review_count')
-    else:  # newest (по умолчанию)
-        products = products.order_by('-id')
+    else:  # popular (Популярное — сортировка по числу отзывов)
+        products = products.order_by('-review_count', F('avg_rating').desc(nulls_last=True))
+        sort_by = 'popular'
 
-    # 7. Списки уникальных категорий и брендов для селектов в шаблоне
+    # 7. Списки уникальных категорий и брендов для фильтров
     categories = Product.objects.exclude(category__isnull=True).exclude(category__exact='').values_list('category',
                                                                                                         flat=True).distinct()
     brands = Product.objects.exclude(brand__isnull=True).exclude(brand__exact='').values_list('brand',
-                                                                                              flat=True).distinct()  # НОВОЕ
+                                                                                              flat=True).distinct()
 
     # 8. Пагинация
     paginator = Paginator(products, 9)
@@ -115,11 +125,13 @@ def catalog(request):
         'page_obj': page_obj,
         'query': query,
         'categories': categories,
-        'brands': brands,  # НОВОЕ
+        'brands': brands,
         'selected_category': selected_category,
-        'selected_brand': selected_brand,  # НОВОЕ
-        'current_sort': sort_by,  # НОВОЕ
-        'is_filtered': bool(species or age or weight or activity)
+        'selected_brands': selected_brands,  # Передаем список выбранных брендов
+        'current_sort': sort_by,
+        'min_price': min_price,
+        'max_price': max_price,
+        'is_filtered': bool(species or age or weight or activity or min_price or max_price or selected_brands)
     }
     return render(request, 'store/catalog.html', context)
 

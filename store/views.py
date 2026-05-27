@@ -18,6 +18,7 @@ from django.db.models import Count
 from django.urls import reverse
 from django.http import JsonResponse
 
+
 def index(request):
     """Главная страница магазина"""
     # Берем 3 последних добавленных товара для блока "Новинки"
@@ -31,7 +32,10 @@ def user_logout(request):
 
 def catalog(request):
     """Каталог товаров с поиском, категориями и умным подбором"""
-    products = Product.objects.all().order_by('-id')
+    products = Product.objects.annotate(
+        avg_rating=Avg('reviews__rating'),
+        review_count=Count('reviews', distinct=True)
+    ).order_by('-id')
 
     # Получаем список уникальных категорий (исключая пустые)
     categories = Product.objects.exclude(category__isnull=True).exclude(category__exact='').values_list('category', flat=True).distinct()
@@ -87,10 +91,32 @@ def catalog(request):
 def product_detail(request, product_id):
     """Страница карточки товара с отзывами и рейтингом"""
     product = get_object_or_404(Product, id=product_id)
-    reviews = product.reviews.all()
 
-    # Считаем средний рейтинг (Django сделает это прямо в базе данных)
-    avg_rating = reviews.aggregate(Avg('rating'))['rating__avg']
+    # 1. Базовый запрос отзывов
+    reviews = product.reviews.all().order_by('-created_at')
+    total_reviews_count = reviews.count()
+
+    # 2. Новая логика фильтрации (Высокие / Низкие)
+    review_filter = request.GET.get('review_filter', 'all')
+    if review_filter == 'high':
+        reviews = reviews.filter(rating__gte=4)  # 4 и 5 звезд
+    elif review_filter == 'low':
+        reviews = reviews.filter(rating__lte=3)  # 1, 2 и 3 звезды
+
+    # 3. Подсчет средней оценки
+    avg_rating = product.reviews.aggregate(Avg('rating'))['rating__avg']
+
+    # 4. Сбор статистики для шкалы (прогресс-бары)
+    rating_stats = []
+    if total_reviews_count > 0:
+        for star in range(5, 0, -1):  # Цикл от 5 до 1
+            count = product.reviews.filter(rating=star).count()
+            percent = (count / total_reviews_count) * 100
+            rating_stats.append({
+                'star': star,
+                'count': count,
+                'percent': percent
+            })
 
     if request.method == 'POST' and request.user.is_authenticated:
         form = ReviewForm(request.POST)
@@ -108,6 +134,9 @@ def product_detail(request, product_id):
         'product': product,
         'reviews': reviews,
         'avg_rating': avg_rating,
+        'total_reviews_count': total_reviews_count,
+        'current_filter': review_filter,
+        'rating_stats': rating_stats,
         'form': form
     })
 

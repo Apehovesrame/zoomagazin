@@ -22,7 +22,6 @@
                         </div>
                     {% endfor %}
                 </div>
-
                 {% if product.images.count > 1 %}
                     <button class="carousel-control-prev" type="button" data-bs-target="#carouselProduct{{ product.id }}" data-bs-slide="prev">
                         <span class="carousel-control-prev-icon" aria-hidden="true"></span>
@@ -40,45 +39,37 @@
                 </div>
             </div>
         {% endif %}
-        </div>
+    </div>
 
     <div class="col-md-6">
         <span class="badge bg-secondary mb-2">{{ product.category }}</span>
-        <h1 class="mb-3">{{ product.name }}</h1>
-        <h2 class="text-primary mb-4">{{ product.price }} руб.</h2>
+        <h1 class="mb-2">{{ product.name }}</h1>
+        <h2 class="text-primary mb-3">{{ product.price }} руб.</h2>
+
+        <a href="#reviews-section" class="text-decoration-none d-inline-block mb-4">
+            {% if avg_rating %}
+                <span class="text-warning fw-bold fs-5">⭐ {{ avg_rating|floatformat:1 }}</span>
+                <span class="text-dark ms-2 text-decoration-underline">💬 {{ total_reviews_count }} отзывов</span>
+            {% else %}
+                <span class="text-muted text-decoration-underline">Станьте первым, кто оставит отзыв!</span>
+            {% endif %}
+        </a>
 
         <div class="product-description-wrapper mb-4">
             <h5 class="fw-bold">Описание товара</h5>
-
-            <div class="collapse" id="descriptionCollapse" aria-expanded="false">
-                <p class="lead" style="font-size: 1rem; line-height: 1.6;">
-                    {{ product.description }}
-                </p>
+            <div class="collapse" id="descriptionCollapse">
+                <p class="lead" style="font-size: 1rem; line-height: 1.6;">{{ product.description }}</p>
             </div>
-
-            <button class="btn btn-link p-0 text-decoration-none fw-bold"
-                    type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#descriptionCollapse"
-                    aria-expanded="false"
-                    aria-controls="descriptionCollapse"
-                    id="collapseButton">
+            <button class="btn btn-link p-0 text-decoration-none fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#descriptionCollapse" id="collapseButton">
                 Развернуть описание ↓
             </button>
         </div>
 
         <script>
-            // Скрипт для смены текста на кнопке (Развернуть/Свернуть)
             const collapseElement = document.getElementById('descriptionCollapse');
             const collapseButton = document.getElementById('collapseButton');
-
-            collapseElement.addEventListener('show.bs.collapse', () => {
-                collapseButton.innerHTML = 'Свернуть ↑';
-            });
-
-            collapseElement.addEventListener('hide.bs.collapse', () => {
-                collapseButton.innerHTML = 'Развернуть описание ↓';
-            });
+            collapseElement.addEventListener('show.bs.collapse', () => { collapseButton.innerHTML = 'Свернуть ↑'; });
+            collapseElement.addEventListener('hide.bs.collapse', () => { collapseButton.innerHTML = 'Развернуть описание ↓'; });
         </script>
 
         {% if product.category == 'Корма' %}
@@ -86,15 +77,9 @@
             <li class="list-group-item"><strong>Для кого:</strong> {{ product.target_species|default:"Универсальный" }}</li>
             <li class="list-group-item"><strong>Возраст:</strong> {{ product.target_age|default:"Любой" }}</li>
             <li class="list-group-item"><strong>Вес питомца:</strong>
-                {% if product.min_weight and product.max_weight %}
-                    от {{ product.min_weight }} до {{ product.max_weight }} кг
-                {% elif product.min_weight %}
-                    от {{ product.min_weight }} кг
-                {% elif product.max_weight %}
-                    до {{ product.max_weight }} кг
-                {% else %}
-                    Для любого веса
-                {% endif %}
+                {% if product.min_weight or product.max_weight %}
+                    от {{ product.min_weight|default:"0" }} до {{ product.max_weight|default:"∞" }} кг
+                {% else %} Для любого веса {% endif %}
             </li>
             <li class="list-group-item"><strong>Активность:</strong> {{ product.target_activity|default:"Любая" }}</li>
         </ul>
@@ -110,22 +95,64 @@
         </form>
     </div>
 </div>
+
 <hr class="my-5">
 
-<div class="row">
+<div class="row" id="reviews-section">
     <div class="col-md-8 mx-auto">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h3 class="fw-bold mb-0">Отзывы покупателей</h3>
-            {% if avg_rating %}
-                <div class="bg-light px-3 py-2 rounded shadow-sm border">
-                    <span class="fs-5 fw-bold text-dark">Рейтинг:</span>
-                    <span class="fs-4 text-warning fw-bold ms-1">{{ avg_rating|floatformat:1 }} ⭐</span>
-                    <span class="text-muted ms-1">({{ reviews.count }})</span>
-                </div>
-            {% else %}
-                <span class="text-muted">Пока нет оценок</span>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-3">
+            <h3 class="fw-bold mb-0">Мнение покупателей</h3>
+
+            {% if total_reviews_count > 0 %}
+                <form method="get" action="#reviews-section" class="m-0">
+                    <select name="review_filter" class="form-select form-select-sm fw-bold border bg-light shadow-sm" style="cursor: pointer;" onchange="this.form.submit()">
+                        <option value="all" {% if current_filter == 'all' %}selected{% endif %}>Все отзывы</option>
+                        <option value="high" {% if current_filter == 'high' %}selected{% endif %}>👍 С высокой оценкой</option>
+                        <option value="low" {% if current_filter == 'low' %}selected{% endif %}>👎 С низкой оценкой</option>
+                    </select>
+                </form>
             {% endif %}
         </div>
+
+        {% if total_reviews_count > 0 %}
+            <div class="bg-light px-4 py-3 rounded shadow-sm border mb-4 cursor-pointer"
+                 data-bs-toggle="collapse"
+                 data-bs-target="#ratingBreakdown"
+                 style="cursor: pointer; transition: background-color 0.2s;"
+                 onmouseover="this.classList.add('bg-white')"
+                 onmouseout="this.classList.remove('bg-white')">
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <span class="fs-5 fw-bold text-dark me-2">Общий рейтинг</span>
+                        <span class="fs-4 text-warning fw-bold">{{ avg_rating|floatformat:1 }}</span>
+                        <span class="fs-5 text-muted ms-1">/ 5</span>
+                    </div>
+                    <span class="text-muted fw-bold">
+                        {{ total_reviews_count }} отз.
+                        <span class="ms-2 fs-6">▼</span>
+                    </span>
+                </div>
+
+                <div class="collapse mt-3" id="ratingBreakdown">
+                    <hr class="text-muted mb-3">
+                    {% for stat in rating_stats %}
+                        <div class="d-flex align-items-center mb-2 small">
+                            <div class="text-nowrap text-muted fw-bold me-2" style="width: 50px;">{{ stat.star }} звёзд</div>
+                            <div class="progress flex-grow-1 bg-secondary bg-opacity-25" style="height: 8px;">
+                                <div class="progress-bar bg-warning rounded" role="progressbar" style="width: {{ stat.percent }}%;" aria-valuenow="{{ stat.percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <div class="text-muted text-end ms-3" style="width: 30px;">{{ stat.count }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <div class="mb-4">
+                <span class="text-muted">Пока нет оценок. Станьте первым!</span>
+            </div>
+        {% endif %}
 
         {% if user.is_authenticated %}
             <div class="card shadow-sm border-0 mb-5 bg-light">
@@ -134,14 +161,8 @@
                     <form method="post">
                         {% csrf_token %}
                         <div class="row">
-                            <div class="col-md-4">
-                                <label class="fw-bold small mb-1">Ваша оценка</label>
-                                {{ form.rating }}
-                            </div>
-                            <div class="col-md-8">
-                                <label class="fw-bold small mb-1">Текст отзыва</label>
-                                {{ form.text }}
-                            </div>
+                            <div class="col-md-4">{{ form.rating }}</div>
+                            <div class="col-md-8">{{ form.text }}</div>
                         </div>
                         <div class="text-end mt-2">
                             <button type="submit" class="btn btn-success px-4">Опубликовать</button>
@@ -166,16 +187,9 @@
                             </div>
                             <span class="text-muted small">{{ review.created_at|date:"d.m.Y" }}</span>
                         </div>
-
                         <div class="mb-2 text-warning fs-5">
-                            {% if review.rating == 5 %}⭐⭐⭐⭐⭐
-                            {% elif review.rating == 4 %}⭐⭐⭐⭐<span class="text-light">⭐</span>
-                            {% elif review.rating == 3 %}⭐⭐⭐<span class="text-light">⭐⭐</span>
-                            {% elif review.rating == 2 %}⭐⭐<span class="text-light">⭐⭐⭐</span>
-                            {% elif review.rating == 1 %}⭐<span class="text-light">⭐⭐⭐⭐</span>
-                            {% endif %}
+                            {% for i in "12345"|make_list %}{% if forloop.counter <= review.rating %}⭐{% else %}<span class="text-light">⭐</span>{% endif %}{% endfor %}
                         </div>
-
                         <p class="mb-0 text-break">{{ review.text }}</p>
                     </div>
                 </div>

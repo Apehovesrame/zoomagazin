@@ -62,6 +62,15 @@
                 <div class="card-body">
                     <span class="badge bg-info mb-2">{{ product.category }}</span>
                     <h5 class="card-title fw-bold">{{ product.name }}</h5>
+
+                    <div class="mb-2 d-flex align-items-center gap-2 small">
+                        {% if product.avg_rating %}
+                            <span class="text-warning fw-bold">⭐ {{ product.avg_rating|floatformat:1 }}</span>
+                            <span class="text-muted">💬 {{ product.review_count }} отзывов</span>
+                        {% else %}
+                            <span class="text-muted" style="font-size: 0.85rem;">Нет отзывов</span>
+                        {% endif %}
+                    </div>
                     <p class="card-text text-muted small">{{ product.description|truncatechars:60 }}</p>
                     <div class="d-flex justify-content-between align-items-center mt-3">
                         <h4 class="text-primary mb-0">{{ product.price }} руб.</h4>

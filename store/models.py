@@ -196,6 +196,7 @@ class Review(models.Model):
     rating = models.PositiveSmallIntegerField('Оценка', validators=[MinValueValidator(1), MaxValueValidator(5)])
     text = models.TextField('Отзыв', max_length=1000)
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
+    admin_reply = models.TextField(blank=True, null=True, verbose_name="Ответ администратора")
 
     class Meta:
         verbose_name = 'Отзыв'

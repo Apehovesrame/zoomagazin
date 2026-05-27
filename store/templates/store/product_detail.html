@@ -175,15 +175,25 @@
         {% if user.is_authenticated %}
             <div class="card shadow-sm border-0 mb-5 bg-light">
                 <div class="card-body p-4">
-                    <h5 class="fw-bold mb-3">Оставить отзыв</h5>
-                    <form method="post">
+                    <h5 class="fw-bold mb-3">
+                        {% if existing_review %}✏️ Редактировать ваш отзыв{% else %}Оставить отзыв{% endif %}
+                    </h5>
+                    <form method="post" action="#reviews-section">
                         {% csrf_token %}
                         <div class="row">
-                            <div class="col-md-4">{{ form.rating }}</div>
-                            <div class="col-md-8">{{ form.text }}</div>
+                            <div class="col-md-4 mb-3 mb-md-0">
+                                <label class="fw-bold small mb-1 text-muted text-uppercase">Ваша оценка</label>
+                                {{ form.rating }}
+                            </div>
+                            <div class="col-md-8">
+                                <label class="fw-bold small mb-1 text-muted text-uppercase">Текст отзыва</label>
+                                {{ form.text }}
+                            </div>
                         </div>
-                        <div class="text-end mt-2">
-                            <button type="submit" class="btn btn-success px-4">Опубликовать</button>
+                        <div class="text-end mt-3">
+                            <button type="submit" class="btn btn-success px-4 fw-bold">
+                                {% if existing_review %}🔄 Обновить отзыв{% else %}Опубликовать{% endif %}
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -196,19 +206,64 @@
 
         <div class="reviews-list">
             {% for review in reviews %}
-                <div class="card border-0 border-bottom mb-3 rounded-0">
-                    <div class="card-body px-0">
+                <div class="card border-0 border-bottom mb-4 rounded-0">
+                    <div class="card-body px-0 pt-0">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <div>
                                 <span class="fw-bold text-dark fs-5">{{ review.user.first_name }} {{ review.user.last_name }}</span>
                                 <span class="text-muted small ms-2">@{{ review.user.username }}</span>
                             </div>
-                            <span class="text-muted small">{{ review.created_at|date:"d.m.Y" }}</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-muted small">{{ review.created_at|date:"d.m.Y" }}</span>
+
+                                {% if request.user == review.user or request.user.is_staff or request.user.role == 'admin' %}
+                                    <a href="{% url 'store:delete_review' review.id %}"
+                                       class="btn btn-sm btn-link text-danger p-0 ms-2 text-decoration-none"
+                                       onclick="return confirm('Вы уверены, что хотите безвозвратно удалить этот отзыв?');"
+                                       title="Удалить отзыв">
+                                        🗑️
+                                    </a>
+                                {% endif %}
+                            </div>
                         </div>
+
                         <div class="mb-2 text-warning fs-5">
-                            {% for i in "12345"|make_list %}{% if forloop.counter <= review.rating %}⭐{% else %}<span class="text-light">⭐</span>{% endif %}{% endfor %}
+                            {% if review.rating >= 1 %}★{% else %}<span class="text-muted opacity-25">☆</span>{% endif %}
+                            {% if review.rating >= 2 %}★{% else %}<span class="text-muted opacity-25">☆</span>{% endif %}
+                            {% if review.rating >= 3 %}★{% else %}<span class="text-muted opacity-25">☆</span>{% endif %}
+                            {% if review.rating >= 4 %}★{% else %}<span class="text-muted opacity-25">☆</span>{% endif %}
+                            {% if review.rating >= 5 %}★{% else %}<span class="text-muted opacity-25">☆</span>{% endif %}
                         </div>
-                        <p class="mb-0 text-break">{{ review.text }}</p>
+
+                        <p class="mb-0 text-break text-secondary" style="font-size: 0.95rem;">{{ review.text }}</p>
+
+                        {% if review.admin_reply %}
+                            <div class="bg-light p-3 rounded-3 border-start border-primary border-3 mt-3 ms-4 shadow-sm">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-bold text-primary small">🧑‍💼 Ответ администрации</span>
+                                </div>
+                                <p class="mb-0 small text-dark" style="white-space: pre-line;">{{ review.admin_reply }}</p>
+                            </div>
+                        {% endif %}
+
+                        {% if request.user.is_staff or request.user.role == 'admin' %}
+                            <div class="mt-2 ms-4">
+                                <button class="btn btn-sm btn-link text-decoration-none p-0 text-muted small"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#replyForm-{{ review.id }}">
+                                    💬 {% if review.admin_reply %}Изменить ответ{% else %}Ответить на отзыв{% endif %}
+                                </button>
+
+                                <div class="collapse mt-2" id="replyForm-{{ review.id }}">
+                                    <form action="{% url 'store:reply_review' review.id %}" method="post" class="d-flex gap-2">
+                                        {% csrf_token %}
+                                        <input type="text" name="reply_text" class="form-control form-control-sm bg-light" placeholder="Ваш ответ..." value="{{ review.admin_reply|default:'' }}" required>
+                                        <button type="submit" class="btn btn-sm btn-primary px-3 fw-bold">Отправить</button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             {% empty %}

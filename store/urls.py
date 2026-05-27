@@ -38,6 +38,9 @@ urlpatterns = [
 
     path('pet/<int:pet_id>/', views.pet_detail, name='pet_detail'),
 
+    path('review/<int:review_id>/delete/', views.delete_review, name='delete_review'),
+    path('review/<int:review_id>/reply/', views.reply_review, name='reply_review'),
+
     path('logout/', views.user_logout, name='logout'),
 
     # Вход и Выход (используем встроенные CBV Django)

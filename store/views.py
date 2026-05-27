@@ -141,23 +141,27 @@ def product_detail(request, product_id):
         for star in range(5, 0, -1):  # Цикл от 5 до 1
             count = product.reviews.filter(rating=star).count()
             percent = (count / total_reviews_count) * 100
-            rating_stats.append({
-                'star': star,
-                'count': count,
-                'percent': percent
-            })
+            rating_stats.append({'star': star, 'count': count, 'percent': percent})
+
+    existing_review = None
+    if request.user.is_authenticated:
+        existing_review = product.reviews.filter(user=request.user).first()
 
     if request.method == 'POST' and request.user.is_authenticated:
-        form = ReviewForm(request.POST)
+        form = ReviewForm(request.POST, instance=existing_review)
         if form.is_valid():
             review = form.save(commit=False)
             review.product = product
             review.user = request.user
             review.save()
-            messages.success(request, 'Спасибо за ваш отзыв!')
+
+            if existing_review:
+                messages.success(request, 'Ваш отзыв успешно обновлен!')
+            else:
+                messages.success(request, 'Спасибо за ваш отзыв!')
             return redirect('store:product_detail', product_id=product.id)
     else:
-        form = ReviewForm()
+        form = ReviewForm(instance=existing_review) if existing_review else ReviewForm()
 
     return render(request, 'store/product_detail.html', {
         'product': product,
@@ -166,9 +170,47 @@ def product_detail(request, product_id):
         'total_reviews_count': total_reviews_count,
         'current_filter': review_filter,
         'rating_stats': rating_stats,
-        'form': form
+        'form': form,
+        'existing_review': existing_review  # Передаем в шаблон
     })
 
+@login_required
+def delete_review(request, review_id):
+    """Удаление отзыва автором или администратором"""
+    from .models import Review
+    review = get_object_or_404(Review, id=review_id)
+    product_id = review.product.id
+
+    # Проверка прав: текущий юзер — автор отзыва ИЛИ он админ/персонал
+    if review.user == request.user or request.user.is_staff or getattr(request.user, 'role', '') == 'admin':
+        review.delete()
+        messages.success(request, 'Отзыв успешно удален.')
+    else:
+        messages.error(request, 'У вас нет прав для удаления этого отзыва.')
+
+    return redirect('store:product_detail', product_id=product_id)
+
+
+@login_required
+def reply_review(request, review_id):
+    """Добавление ответа администратора на отзыв"""
+    from .models import Review
+    review = get_object_or_404(Review, id=review_id)
+
+    # Проверка прав менеджера/администратора
+    if request.user.is_staff or getattr(request.user, 'role', '') == 'admin':
+        if request.method == 'POST':
+            reply_text = request.POST.get('reply_text', '').strip()
+            if reply_text:
+                review.admin_reply = reply_text
+                review.save()
+                messages.success(request, 'Ответ на отзыв успешно опубликован.')
+            else:
+                messages.error(request, 'Текст ответа не может быть пустым.')
+    else:
+        messages.error(request, 'Только администратор может отвечать на отзывы.')
+
+    return redirect('store:product_detail', product_id=review.product.id)
 
 def register(request):
     """Регистрация нового пользователя"""

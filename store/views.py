@@ -14,9 +14,9 @@ import re
 from .models import Post, Comment, Tag
 from django.db.models import Avg, Q
 from .forms import CustomUserCreationForm, UserUpdateForm, OrderCreateForm, PetForm, ProductForm, PostForm, CommentForm, ReviewForm
-from django.db.models import Count
 from django.urls import reverse
 from django.http import JsonResponse
+from django.db.models import Avg, Count, F
 
 
 def index(request):
@@ -30,40 +30,48 @@ def user_logout(request):
     logout(request)
     return redirect('store:index')
 
+
 def catalog(request):
-    """Каталог товаров с поиском, категориями и умным подбором"""
-    products = Product.objects.annotate(
-        avg_rating=Avg('reviews__rating'),
-        review_count=Count('reviews', distinct=True)
-    ).order_by('-id')
+    """Каталог товаров с поиском, категориями, брендами, сортировкой и умным подбором"""
 
-    # Получаем список уникальных категорий (исключая пустые)
-    categories = Product.objects.exclude(category__isnull=True).exclude(category__exact='').values_list('category', flat=True).distinct()
+    # 1. Сбор базовых параметров из GET-запроса
+    query = request.GET.get('q', '')
+    selected_category = request.GET.get('category', '')
+    selected_brand = request.GET.get('brand', '')  # НОВОЕ: бренд
+    sort_by = request.GET.get('sort', 'newest')  # НОВОЕ: сортировка
 
-    # 1. Фильтр по подкатегории (клики по кнопкам-таблеткам)
-    selected_category = request.GET.get('category')
-    if selected_category:
-        products = products.filter(category=selected_category)
-
-    # 2. Текстовый поиск по названию
-    query = request.GET.get('q')
-    if query:
-        products = products.filter(Q(name__icontains=query))
-
-    # 3. Алгоритм Умного подбора
+    # Параметры умного подбора
     species = request.GET.get('species')
     age = request.GET.get('age')
     weight = request.GET.get('weight')
     activity = request.GET.get('activity')
 
+    # 2. Базовый QuerySet с подсчетом рейтинга
+    products = Product.objects.annotate(
+        avg_rating=Avg('reviews__rating'),
+        review_count=Count('reviews', distinct=True)
+    )
+
+    # 3. Применяем текстовый поиск
+    if query:
+        products = products.filter(Q(name__icontains=query))
+
+    # 4. Применяем фильтр по категориям и брендам
+    if selected_category:
+        products = products.filter(category=selected_category)
+    if selected_brand:  # НОВОЕ: фильтрация по бренду
+        products = products.filter(brand=selected_brand)
+
+    # 5. Алгоритм Умного подбора (твоя логика без изменений)
     if species or age or weight or activity:
-        # Убрали ограничение "только Корма", теперь ищем по всем товарам!
         if species:
-            products = products.filter(Q(target_species=species) | Q(target_species__isnull=True) | Q(target_species=''))
+            products = products.filter(
+                Q(target_species=species) | Q(target_species__isnull=True) | Q(target_species=''))
         if age:
             products = products.filter(Q(target_age=age) | Q(target_age__isnull=True) | Q(target_age=''))
         if activity:
-            products = products.filter(Q(target_activity=activity) | Q(target_activity__isnull=True) | Q(target_activity=''))
+            products = products.filter(
+                Q(target_activity=activity) | Q(target_activity__isnull=True) | Q(target_activity=''))
         if weight:
             try:
                 w = float(weight.replace(',', '.'))
@@ -74,6 +82,24 @@ def catalog(request):
             except ValueError:
                 pass
 
+    # 6. НОВОЕ: Применяем сортировку контента
+    if sort_by == 'price_asc':
+        products = products.order_by('price')
+    elif sort_by == 'price_desc':
+        products = products.order_by('-price')
+    elif sort_by == 'rating':
+        # Сортируем по рейтингу. Сначала высокие, товары без рейтинга (NULL) — в самый конец
+        products = products.order_by(F('avg_rating').desc(nulls_last=True), '-review_count')
+    else:  # newest (по умолчанию)
+        products = products.order_by('-id')
+
+    # 7. Списки уникальных категорий и брендов для селектов в шаблоне
+    categories = Product.objects.exclude(category__isnull=True).exclude(category__exact='').values_list('category',
+                                                                                                        flat=True).distinct()
+    brands = Product.objects.exclude(brand__isnull=True).exclude(brand__exact='').values_list('brand',
+                                                                                              flat=True).distinct()  # НОВОЕ
+
+    # 8. Пагинация
     paginator = Paginator(products, 9)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -82,7 +108,10 @@ def catalog(request):
         'page_obj': page_obj,
         'query': query,
         'categories': categories,
+        'brands': brands,  # НОВОЕ
         'selected_category': selected_category,
+        'selected_brand': selected_brand,  # НОВОЕ
+        'current_sort': sort_by,  # НОВОЕ
         'is_filtered': bool(species or age or weight or activity)
     }
     return render(request, 'store/catalog.html', context)

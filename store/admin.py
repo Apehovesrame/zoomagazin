@@ -24,12 +24,13 @@ class PetAdmin(admin.ModelAdmin):
     list_filter = ('species', 'age_group', 'activity_level') # Боковая панель фильтров
     search_fields = ('name', 'user__username')               # Строка поиска
 
+
 # 3. Настройка отображения товаров
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'category', 'price', 'target_species')
-    list_filter = ('category', 'target_species')
-    search_fields = ('name', 'description')
+    list_display = ('name', 'brand', 'category', 'price', 'target_species')
+    list_filter = ('category', 'brand', 'target_species')
+    search_fields = ('name', 'description', 'brand')
 
 # 4. Вложенное отображение позиций заказа (чтобы товары показывались прямо внутри чека)
 class OrderItemInline(admin.TabularInline):

@@ -59,6 +59,8 @@ class Product(models.Model):
     price = models.DecimalField('Цена', max_digits=10, decimal_places=2)
     description = models.TextField('Описание', blank=True, null=True)
 
+    brand = models.CharField(max_length=100, blank=True, null=True, verbose_name="Бренд")
+
     image = models.ImageField('Фото товара', upload_to='products_images/', blank=True, null=True)
 
     # Поля для алгоритма подбора (актуально только для кормов)

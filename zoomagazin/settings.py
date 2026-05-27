@@ -126,14 +126,14 @@ AUTH_USER_MODEL = 'store.CustomUser'
 # Вывод писем в консоль (для тестирования сброса пароля)
 #EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-# Настройки реальной отправки писем через SMTP
+# Настройки реальной отправки писем через SMTP Mail.ru
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.mail.ru'
 EMAIL_PORT = 465
 EMAIL_USE_SSL = True
-EMAIL_HOST_USER = 'm.zonin@mail.ru'      # Впиши свой полный адрес Mail.ru
-EMAIL_HOST_PASSWORD = 'mh6apS3ORAh7onpqCDxc' # Вставь пароль из Шага 1 (без пробелов)
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER        # От кого будут приходить письма
+EMAIL_HOST_USER = 'm.zonin@mail.ru'
+EMAIL_HOST_PASSWORD = 'mh6apS3ORAh7onpqCDxc'
+DEFAULT_FROM_EMAIL = 'm.zonin@mail.ru' # Жестко указываем строку, без лишних символов
 
 # Настройки перенаправлений для системы авторизации
 LOGIN_REDIRECT_URL = '/'      # Куда отправлять пользователя после успешного входа (на главную)

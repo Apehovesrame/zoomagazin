@@ -17,6 +17,8 @@ from .forms import CustomUserCreationForm, UserUpdateForm, OrderCreateForm, PetF
 from django.urls import reverse
 from django.http import JsonResponse
 from django.db.models import Avg, Count, F
+from django.core.mail import send_mail
+from django.conf import settings
 
 
 def index(request):
@@ -613,7 +615,7 @@ def manager_orders(request):
 @require_POST
 @user_passes_test(is_store_admin, login_url='store:index')
 def change_order_status(request, order_id):
-    """Быстрое изменение статуса заказа менеджером"""
+    """Быстрое изменение статуса заказа менеджером с уведомлением клиента по Email"""
     order = get_object_or_404(Order, id=order_id)
     new_status = request.POST.get('status')
 
@@ -621,7 +623,41 @@ def change_order_status(request, order_id):
     if new_status in valid_statuses:
         order.status = new_status
         order.save()
-        messages.success(request, f'Статус заказа №{order.id} успешно изменен на «{new_status}»')
+
+        # Логика отправки уведомления на почту клиента
+        if order.email:  # Проверяем, заполнено ли поле email в заказе
+            subject = f'Обновление статуса заказа №{order.id} — Зоомагазин'
+            message = (
+                f'Здравствуйте, {order.first_name} {order.last_name}!\n\n'
+                f'Статус вашего заказа №{order.id} изменился.\n'
+                f'Новый статус: "{order.get_status_display()}".\n\n'
+                f'Вы можете отслеживать изменения в вашем личном кабинете.\n'
+                f'Спасибо, что выбрали наш зоомагазин!'
+            )
+
+            try:
+                send_mail(
+                    subject=subject,
+                    message=message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,  # Отправитель из settings.py (m.zonin@mail.ru)
+                    recipient_list=[order.email],  # Почта покупателя
+                    fail_silently=False,  # Выбросит исключение, если что-то пойдет не так
+                )
+                messages.success(
+                    request,
+                    f'Статус заказа №{order.id} успешно изменен на «{order.get_status_display()}». Уведомление отправлено на {order.email}.'
+                )
+            except Exception as e:
+                # Если упал интернет или Mail.ru заблокировал сессию, менеджер узнает об этом, но статус сохранится
+                messages.warning(
+                    request,
+                    f'Статус заказа №{order.id} изменен на «{order.get_status_display()}», но Email-уведомление не ушло. Ошибка: {e}'
+                )
+        else:
+            messages.success(
+                request,
+                f'Статус заказа №{order.id} успешно изменен на «{order.get_status_display()}» (Email клиента не указан).'
+            )
     else:
         messages.error(request, 'Ошибка: выбран неверный статус.')
 

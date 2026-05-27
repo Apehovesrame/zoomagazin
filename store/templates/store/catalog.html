@@ -49,16 +49,27 @@
 
                 <div class="mb-4">
                     <label class="form-label small fw-bold text-muted text-uppercase mb-1">Бренды</label>
-                    <div class="border rounded p-2 bg-light" style="max-height: 180px; overflow-y: auto;">
+
+                    {% if brands|length > 3 %}
+                        <input type="text" id="brandSearchInput" class="form-control form-control-sm mb-2" placeholder="Найти бренд...">
+                    {% endif %}
+
+                    <div class="border rounded p-2 bg-light" style="max-height: 220px; overflow-y: auto;" id="brandsContainer">
                         {% for brand in brands %}
-                            <div class="form-check mb-1">
-                                <input class="form-check-input" type="checkbox" name="brand" value="{{ brand }}" id="brand_{{ forloop.counter }}" {% if brand in selected_brands %}checked{% endif %}>
-                                <label class="form-check-label small text-dark" style="cursor: pointer;" for="brand_{{ forloop.counter }}">
+                            <div class="form-check mb-1 brand-item {% if forloop.counter > 3 and brand not in selected_brands %}d-none extra-brand{% endif %}">
+                                <input class="form-check-input brand-checkbox" type="checkbox" name="brand" value="{{ brand }}" id="brand_{{ forloop.counter }}" {% if brand in selected_brands %}checked{% endif %}>
+                                <label class="form-check-label small text-dark brand-name" style="cursor: pointer;" for="brand_{{ forloop.counter }}">
                                     {{ brand }}
                                 </label>
                             </div>
                         {% endfor %}
                     </div>
+
+                    {% if brands|length > 3 %}
+                        <button type="button" class="btn btn-link btn-sm text-decoration-none p-0 mt-1 fw-bold text-muted" id="toggleBrandsBtn">
+                            Показать все ▾
+                        </button>
+                    {% endif %}
                 </div>
 
                 <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold shadow-sm mb-2">Применить фильтры</button>
@@ -145,4 +156,69 @@
         </div>
     </div>
 </form>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const searchInput = document.getElementById('brandSearchInput');
+        const toggleBtn = document.getElementById('toggleBrandsBtn');
+        const brandItems = document.querySelectorAll('.brand-item');
+        let isExpanded = false;
+
+        // 1. Поиск брендов на лету (без перезагрузки)
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const filter = this.value.toLowerCase().trim();
+
+                brandItems.forEach(item => {
+                    const brandName = item.querySelector('.brand-name').textContent.toLowerCase();
+                    // Если имя бренда содержит введенный текст - показываем, иначе - скрываем
+                    if (brandName.includes(filter)) {
+                        item.classList.remove('d-none');
+                    } else {
+                        item.classList.add('d-none');
+                    }
+                });
+
+                // Если юзер что-то ищет, скрываем кнопку "Показать все", чтобы не мешалась
+                if (toggleBtn) {
+                    toggleBtn.style.display = filter.length > 0 ? 'none' : 'block';
+                    // Если юзер стер поиск, возвращаем список в исходное состояние (свернутое или развернутое)
+                    if (filter.length === 0) {
+                        applyExpandCollapse();
+                    }
+                }
+            });
+        }
+
+        // 2. Логика кнопки "Показать все ▾" / "Скрыть ▴"
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                isExpanded = !isExpanded;
+                applyExpandCollapse();
+            });
+        }
+
+        function applyExpandCollapse() {
+            if (isExpanded) {
+                // Показываем абсолютно все бренды
+                brandItems.forEach(item => item.classList.remove('d-none'));
+                toggleBtn.innerHTML = 'Скрыть ▴';
+            } else {
+                // Скрываем те, что изначально были скрыты (имеют класс extra-brand)
+                brandItems.forEach(item => {
+                    const checkbox = item.querySelector('.brand-checkbox');
+                    // ВАЖНО: Если пользователь успел поставить галочку на скрытом бренде, мы его больше не прячем!
+                    if (item.classList.contains('extra-brand') && !checkbox.checked) {
+                        item.classList.add('d-none');
+                    } else {
+                        item.classList.remove('d-none');
+                    }
+                });
+                toggleBtn.innerHTML = 'Показать все ▾';
+            }
+        }
+    });
+</script>
+
 {% endblock %}

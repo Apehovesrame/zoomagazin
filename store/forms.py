@@ -65,12 +65,12 @@ class OrderCreateForm(forms.ModelForm):
             'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'ул. Пушкина, д. 10, кв. 5'}),
             'city': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Москва'}),
 
-            # Твой новый виджет для телефона с ограничениями ввода на фронтенде
+            # Виджет для телефона с ограничениями ввода на фронтенде
             'phone': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': '+79991234567',
                 'maxlength': '12',  # +7 (2 символа) + 10 цифр = 12
-                'pattern': r'\+7\d{10}'  # HTML5 регулярное выражение
+                'pattern': r'\+7\d{10}'  # HTML5 валидация на фронтенде
             }),
         }
 
@@ -87,7 +87,14 @@ class OrderCreateForm(forms.ModelForm):
         if self.user and self.user.is_authenticated:
             self.fields['email'].widget.attrs['readonly'] = True
             self.fields['email'].widget.attrs['class'] = 'form-control bg-secondary bg-opacity-10 text-muted'
-            self.fields['email'].help_text = 'Почта привязана к аккаунту и не подлежит изменению.'
+            self.fields[
+                'email'].help_text = 'Почта привязана к аккаунту и используется для отправки уведомлений о статусе заказа.'
+
+        # ДОБАВЛЕНИЕ ЗВЁЗДОЧЕК ДЛЯ ОБЯЗАТЕЛЬНЫХ ПОЛЕЙ
+        for field_name, field in self.fields.items():
+            if field.required:
+                # Добавляем тег безопасного HTML с красной звёздочкой к оригинальному названию поля
+                field.label = f'{field.label} <span class="text-danger">*</span>'
 
     def clean_phone(self):
         """Проверка формата телефона на стороне бэкенда (Django)"""

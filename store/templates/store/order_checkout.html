@@ -3,33 +3,98 @@
 
 {% block content %}
 <div class="row justify-content-center mt-4 mb-5">
-    <div class="col-md-8 col-lg-6">
-        <div class="card shadow border-0">
-            <div class="card-header bg-success text-white py-3">
-                <h4 class="mb-0">📦 Оформление заказа</h4>
+    <div class="col-md-8 col-lg-7">
+        <div class="card shadow border-0 rounded-4">
+            <div class="card-header bg-success text-white py-3 rounded-top-4">
+                <h4 class="mb-0 fw-bold">📦 Оформление заказа</h4>
             </div>
             <div class="card-body p-4">
-                <p class="text-muted mb-4">Пожалуйста, проверьте ваши контактные данные. На этот email придет чек и информация о статусе доставки.</p>
+
+                <div class="alert alert-light border shadow-sm small mb-4">
+                    Поля, отмеченные <span class="text-danger fw-bold">*</span>, обязательны для заполнения. На указанный Email будут приходить уведомления о статусе заказа.
+                </div>
 
                 <form method="post" id="checkout-form">
                     {% csrf_token %}
 
-                    {% for field in form %}
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">{{ field.label }}</label>
-                            {{ field }}
+                    <div class="row g-3">
 
-                            {% if field.errors %}
-                                <div class="text-danger small mt-1">
-                                    {{ field.errors|striptags }}
-                                </div>
+                        <div class="col-md-6">
+                            <label for="id_first_name" class="form-label fw-bold small text-muted text-uppercase mb-1">
+                                Имя <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" name="first_name" id="id_first_name" class="form-control bg-light" placeholder="Иван" value="{{ form.first_name.value|default:'' }}" required>
+                            {% if form.first_name.errors %}
+                                <div class="text-danger small mt-1 fw-bold">{{ form.first_name.errors.0 }}</div>
                             {% endif %}
                         </div>
-                    {% endfor %}
+
+                        <div class="col-md-6">
+                            <label for="id_last_name" class="form-label fw-bold small text-muted text-uppercase mb-1">
+                                Фамилия <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" name="last_name" id="id_last_name" class="form-control bg-light" placeholder="Иванов" value="{{ form.last_name.value|default:'' }}" required>
+                            {% if form.last_name.errors %}
+                                <div class="text-danger small mt-1 fw-bold">{{ form.last_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-12">
+                            <label for="id_email" class="form-label fw-bold small text-muted text-uppercase mb-1">
+                                Электронная почта <span class="text-danger">*</span>
+                            </label>
+                            <input type="email" name="email" id="id_email"
+                                   class="form-control {% if request.user.is_authenticated %}bg-secondary bg-opacity-10 text-muted{% else %}bg-light{% endif %}"
+                                   placeholder="example@mail.ru"
+                                   value="{{ form.email.value|default:'' }}"
+                                   {% if request.user.is_authenticated %}readonly{% endif %} required>
+
+                            {% if request.user.is_authenticated %}
+                                <div class="form-text small text-primary fw-bold mt-1">
+                                    ℹ️ Почта привязана к аккаунту и используется для отправки чеков и уведомлений.
+                                </div>
+                            {% endif %}
+
+                            {% if form.email.errors %}
+                                <div class="text-danger small mt-1 fw-bold">{{ form.email.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="id_phone" class="form-label fw-bold small text-muted text-uppercase mb-1">
+                                Телефон <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" name="phone" id="id_phone" class="form-control bg-light" placeholder="+79991234567" maxlength="12" pattern="\+7\d{10}" value="{{ form.phone.value|default:'+7' }}" required>
+                            {% if form.phone.errors %}
+                                <div class="text-danger small mt-1 fw-bold">{{ form.phone.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="id_city" class="form-label fw-bold small text-muted text-uppercase mb-1">
+                                Город <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" name="city" id="id_city" class="form-control bg-light" placeholder="Москва" value="{{ form.city.value|default:'' }}" required>
+                            {% if form.city.errors %}
+                                <div class="text-danger small mt-1 fw-bold">{{ form.city.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-12">
+                            <label for="id_address" class="form-label fw-bold small text-muted text-uppercase mb-1">
+                                Адрес доставки <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" name="address" id="id_address" class="form-control bg-light" placeholder="ул. Пушкина, д. 10, кв. 5" value="{{ form.address.value|default:'' }}" required>
+                            {% if form.address.errors %}
+                                <div class="text-danger small mt-1 fw-bold">{{ form.address.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                    </div>
 
                     <div class="d-flex justify-content-between align-items-center mt-5">
-                        <a href="{% url 'store:cart' %}" class="btn btn-outline-secondary">← Вернуться в корзину</a>
-                        <button type="submit" id="submit-btn" class="btn btn-success btn-lg px-4 shadow-sm">Подтвердить заказ</button>
+                        <a href="{% url 'store:cart' %}" class="btn btn-outline-secondary fw-bold">← Вернуться в корзину</a>
+                        <button type="submit" id="submit-btn" class="btn btn-success btn-lg px-4 shadow-sm fw-bold">Подтвердить заказ</button>
                     </div>
                 </form>
             </div>
@@ -39,23 +104,13 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        // 1. Твой скрипт для автоматического добавления стилей Bootstrap
-        let inputs = document.querySelectorAll("input");
-        inputs.forEach(function(input) {
-            if (input.type !== "hidden" && input.type !== "submit") {
-                input.classList.add("form-control");
-            }
-        });
-
-        // 2. ИСПРАВЛЕНО: Логика мгновенной блокировки кнопки после первого нажатия
+        // Защита от двойного клика и накрутки (оставили только нужную часть)
         const form = document.getElementById('checkout-form');
         const submitBtn = document.getElementById('submit-btn');
 
         if (form && submitBtn) {
             form.addEventListener('submit', function() {
-                // Блокируем кнопку, делая её некликабельной
                 submitBtn.disabled = true;
-                // Добавляем красивый спиннер загрузки Bootstrap вместо обычного текста
                 submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Обработка...';
             });
         }

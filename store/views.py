@@ -25,8 +25,11 @@ from django.utils import timezone
 
 def index(request):
     """Главная страница магазина"""
-    # Берем 3 последних добавленных товара для блока "Новинки"
-    latest_products = Product.objects.all().order_by('-id')[:3]
+    latest_products = Product.objects.annotate(
+        avg_rating=Avg('reviews__rating'),
+        review_count=Count('reviews', distinct=True)
+    ).order_by('-id')[:3]
+
     return render(request, 'store/index.html', {'latest_products': latest_products})
 
 def user_logout(request):

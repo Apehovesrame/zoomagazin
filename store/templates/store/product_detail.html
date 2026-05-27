@@ -90,36 +90,45 @@
         </ul>
         {% endif %}
 
-        <div class="card p-3 bg-light border-0 rounded-3 mb-4">
+        <div class="card p-4 bg-light border-0 rounded-4 mb-4 shadow-sm">
+
             <div class="d-flex justify-content-between align-items-center small mb-1">
                 <span class="text-muted fw-bold">Наличие:</span>
-                <span class="fw-bold {% if product.stock <= 5 %}text-danger{% elif product.stock <= 15 %}text-warning text-dark{% else %}text-success{% endif %}">
+                <span class="fw-bold {% if product.stock <= 10 %}text-danger{% elif product.stock <= 15 %}text-warning text-dark{% else %}text-success{% endif %} fs-5">
                     {{ product.stock }} шт.
                 </span>
             </div>
 
-            <div class="progress" style="height: 6px;">
-                <div class="progress-bar {% if product.stock <= 5 %}bg-danger{% elif product.stock <= 15 %}bg-warning{% else %}bg-success{% endif %}"
+            <div class="progress shadow-sm mb-3" style="height: 8px; background-color: #e9ecef;">
+                <div class="progress-bar
+                            {% if product.stock <= 10 %}bg-danger
+                            {% elif product.stock <= 15 %}bg-warning
+                            {% else %}bg-success{% endif %}"
                      role="progressbar"
-                     style="width: {% if product.stock <= 5 %}20%{% elif product.stock <= 15 %}60%{% else %}100%{% endif %}%;">
+                     style="width: calc(({{ product.stock }} / 15) * 100%); max-width: 100%;">
                 </div>
             </div>
 
-            {% if product.stock <= 5 %}
-                <small class="text-danger fw-bold mt-2 d-block" style="font-size: 0.8rem;">⚠️ Товар заканчивается, рекомендуем оформить заказ быстрее!</small>
+            {% if product.stock <= 10 %}
+                <small class="text-danger fw-bold mb-3 d-block" style="font-size: 0.8rem;">⚠️ Товар заканчивается, рекомендуем оформить заказ быстрее!</small>
             {% elif product.stock <= 15 %}
-                <small class="text-warning text-dark fw-bold mt-2 d-block" style="font-size: 0.8rem;">⚡ Запас ограничен, не откладывайте покупку.</small>
+                <small class="text-warning text-dark fw-bold mb-3 d-block" style="font-size: 0.8rem;">⚡ Запас ограничен, не откладывайте покупку.</small>
             {% endif %}
+
+            <form action="{% url 'store:add_to_cart' product.id %}" method="POST" class="mt-2">
+                {% csrf_token %}
+                <div class="d-flex align-items-center gap-2">
+                    <div class="input-group input-group-lg" style="width: 140px;">
+                        <span class="input-group-text bg-white fs-6 text-muted px-2">Кол-во:</span>
+                        <input type="number" name="quantity" value="1" min="1" max="{{ product.stock }}" class="form-control text-center bg-white px-1" style="font-size: 1rem;">
+                    </div>
+                    <button type="submit" class="btn btn-success btn-lg flex-grow-1 fw-bold fs-6 shadow-sm">
+                        🛒 Добавить в корзину
+                    </button>
+                </div>
+            </form>
         </div>
 
-        <form action="{% url 'store:add_to_cart' product.id %}" method="POST" class="d-flex align-items-center mt-4">
-            {% csrf_token %}
-            <div class="input-group input-group-lg w-100">
-                <span class="input-group-text">Кол-во:</span>
-                <input type="number" name="quantity" value="1" min="1" max="{{ product.stock }}" class="form-control text-center" style="max-width: 100px;">
-                <button type="submit" class="btn btn-success flex-grow-1">🛒 Добавить в корзину</button>
-            </div>
-        </form>
     </div>
 </div>
 

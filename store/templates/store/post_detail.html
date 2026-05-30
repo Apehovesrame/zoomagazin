@@ -1,16 +1,23 @@
 {% extends 'store/base.html' %}
-{% block title %}Публикация - {{ post.pet.name }}{% endblock %}
+{% block title %}Публикация{% if post.pet %} - {{ post.pet.name }}{% endif %}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center mt-4 mb-5">
     <div class="col-lg-10">
-        <a href="{% url 'store:pet_detail' post.pet.id %}" class="btn btn-sm btn-outline-secondary mb-3 fw-bold">
-            ← Назад к {{ post.pet.name }}
-        </a>
+
+        {% if post.pet %}
+            <a href="{% url 'store:pet_detail' post.pet.id %}" class="btn btn-sm btn-outline-secondary mb-3 fw-bold">
+                ← Назад к {{ post.pet.name }}
+            </a>
+        {% else %}
+            <a href="{% url 'store:community' %}" class="btn btn-sm btn-outline-secondary mb-3 fw-bold">
+                ← Назад в ленту
+            </a>
+        {% endif %}
 
         <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
             <div class="row g-0">
-                
+
                 <div class="col-md-7 bg-dark d-flex align-items-center justify-content-center position-relative" style="min-height: 500px;">
                     {% if post.images.all %}
                         <div id="carouselPostDetail{{ post.id }}" class="carousel slide w-100" data-bs-ride="carousel">
@@ -49,17 +56,33 @@
                 <div class="col-md-5 d-flex flex-column bg-white" style="max-height: 80vh;">
 
                     <div class="p-3 border-bottom d-flex align-items-center bg-light">
-                        {% if post.pet.images.all %}
-                            <img src="{{ post.pet.images.first.image.url }}" class="rounded-circle me-3 shadow-sm" style="width: 45px; height: 45px; object-fit: cover;">
+                        {% if post.pet %}
+                            {% if post.pet.images.all %}
+                                <img src="{{ post.pet.images.first.image.url }}" class="rounded-circle me-3 shadow-sm" style="width: 45px; height: 45px; object-fit: cover;">
+                            {% else %}
+                                <div class="bg-secondary rounded-circle text-white d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 45px; height: 45px;">🐾</div>
+                            {% endif %}
+                            <div>
+                                <h6 class="mb-0 fw-bold">
+                                    <a href="{% url 'store:pet_detail' post.pet.id %}" class="text-decoration-none text-dark">{{ post.pet.name }}</a>
+                                </h6>
+                                <small class="text-muted">Владелец: @{{ post.author.username }}</small>
+                            </div>
                         {% else %}
-                            <div class="bg-secondary rounded-circle text-white d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 45px; height: 45px;">🐾</div>
+                            {% if post.author.avatar %}
+                                <img src="{{ post.author.avatar.url }}" class="rounded-circle me-3 shadow-sm" style="width: 45px; height: 45px; object-fit: cover;">
+                            {% else %}
+                                <div class="bg-secondary rounded-circle text-white d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 45px; height: 45px;">
+                                    {{ post.author.username|make_list|first|upper }}
+                                </div>
+                            {% endif %}
+                            <div>
+                                <h6 class="mb-0 fw-bold">
+                                    {{ post.author.first_name }} {{ post.author.last_name }}
+                                </h6>
+                                <small class="text-muted">@{{ post.author.username }}</small>
+                            </div>
                         {% endif %}
-                        <div>
-                            <h6 class="mb-0 fw-bold">
-                                <a href="{% url 'store:pet_detail' post.pet.id %}" class="text-decoration-none text-dark">{{ post.pet.name }}</a>
-                            </h6>
-                            <small class="text-muted">Владелец: @{{ post.author.username }}</small>
-                        </div>
                     </div>
 
                     <div class="p-3 flex-grow-1 overflow-auto">
@@ -122,6 +145,11 @@
     </div>
 </div>
 
+<style>
+    .transition-scale { transition: transform 0.2s ease; }
+    .transition-scale:hover { transform: scale(1.1); }
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const getCsrfToken = () => document.querySelector('[name=csrfmiddlewaretoken]').value;
@@ -176,9 +204,8 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(res => res.json())
             .then(data => {
-                // Если вьюшка вернула флаг успеха или сгенерировала JSON напрямую
                 if(data.success || data.author) {
-                    if (noCommentsText) noCommentsText.remove(); // Удаляем надпись "Будьте первым"
+                    if (noCommentsText) noCommentsText.remove();
 
                     const authorName = data.author ? data.author : "{{ request.user.username }}";
                     const initial = data.author_initial ? data.author_initial : authorName.charAt(0).toUpperCase();
@@ -200,13 +227,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     commentsList.insertAdjacentHTML('beforeend', newHtml);
                     inputField.value = '';
                 } else {
-                    // Перезагрузка на случай, если вьюшка отдает стандартный HTML редирект
                     window.location.reload();
                 }
             })
             .catch(err => {
                 console.error(err);
-                window.location.reload(); // Фолбэк при ошибках
+                window.location.reload();
             })
             .finally(() => submitBtn.disabled = false);
         });

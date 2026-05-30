@@ -20,7 +20,7 @@
                         <div class="border rounded p-3 bg-light shadow-sm">
                             {% for radio in form.cancel_reason %}
                                 <div class="form-check mb-2">
-                                    <input class="form-check-input" type="radio" name="cancel_reason" value="{{ radio.choice_value }}" id="{{ radio.id_for_label }}" {% if radio.is_checked %}checked{% endif %}>
+                                    {{ radio.tag }}
                                     <label class="form-check-label" for="{{ radio.id_for_label }}">
                                         {{ radio.choice_label }}
                                     </label>
@@ -45,7 +45,7 @@
                     </div>
 
                     <div class="d-flex justify-content-between mt-4">
-                        <a href="{% url 'store:profile' %}" class="btn btn-outline-secondary px-4 fw-bold">Не отменять</a>
+                        <a href="{% url 'store:profile' %}#orders" class="btn btn-outline-secondary px-4 fw-bold">Не отменять</a>
                         <button type="submit" class="btn btn-danger px-4 fw-bold shadow-sm">Отправить запрос на отмену</button>
                     </div>
                 </form>
@@ -53,4 +53,28 @@
         </div>
     </div>
 </div>
+
+<style>
+    .form-check input[type="radio"] {
+        float: left;
+        margin-left: -1.5em;
+        width: 1em;
+        height: 1em;
+        margin-top: 0.25em;
+        vertical-align: top;
+        background-color: #fff;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+        border: 1px solid rgba(0,0,0,.25);
+        border-radius: 50%;
+        transition: background-color .15s ease-in-out,background-position .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+        cursor: pointer;
+    }
+    .form-check input[type="radio"]:checked {
+        background-color: #dc3545; /* Красный цвет под стиль нашей карточки удаления */
+        border-color: #dc3545;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='2' fill='%23fff'/%3e%3c/svg%3e");
+    }
+</style>
 {% endblock %}

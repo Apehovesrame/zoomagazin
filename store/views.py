@@ -23,6 +23,9 @@ import datetime
 from django.utils import timezone
 from .forms import OrderCancelForm
 from django.urls import reverse
+import json
+import csv
+from django.http import HttpResponse
 
 
 def index(request):
@@ -498,16 +501,15 @@ def add_pet(request):
 
 @login_required
 def delete_pet(request, pet_id):
-    """Удаление питомца из профиля"""
-    # Ищем питомца, строго проверяя, что он принадлежит текущему пользователю
-    pet = get_object_or_404(Pet, id=pet_id, owner=request.user)
+    # ИСПРАВЛЕНО: используем user=request.user вместо owner
+    pet = get_object_or_404(Pet, id=pet_id, user=request.user)
 
-    # Сохраняем имя для красивого уведомления
-    pet_name = pet.name
-    pet.delete()
+    if request.method == 'POST':
+        pet.delete()
+        messages.success(request, f'Питомец {pet.name} успешно удален.')
 
-    messages.success(request, f'Питомец "{pet_name}" успешно удален из вашего профиля.')
-    return redirect('store:profile')
+    # Возвращаемся в профиль на вкладку с питомцами
+    return redirect(reverse('store:profile') + '#pets')
 
 @login_required
 def delete_pet_image(request, image_id):
@@ -686,34 +688,41 @@ def delete_product(request, product_id):
 
 @login_required
 def request_order_cancel(request, order_id):
-    # Получаем заказ, убедившись, что он принадлежит текущему юзеру
+    # Достаем заказ, обязательно проверяя, что он принадлежит текущему юзеру
     order = get_object_or_404(Order, id=order_id, user=request.user)
 
-    # Если заказ уже отменен или выполнен, не даем запросить отмену снова
-    if order.status in ['cancelled', 'cancel_requested', 'completed']:
-        messages.warning(request, 'Для этого заказа нельзя запросить отмену.')
-        return redirect(reverse('store:profile') + '#orders')
-
     if request.method == 'POST':
+        # Передаем данные из POST-запроса в форму
         form = OrderCancelForm(request.POST, instance=order)
+
         if form.is_valid():
-            # Сохраняем форму (это запишет cancel_reason и cancel_reason_text в БД)
-            cancelled_order = form.save(commit=False)
+            # 1. Сохраняем причину и комментарий из формы
+            cancel_request = form.save(commit=False)
 
-            # МЕНЯЕМ СТАТУС ЗАКАЗА
-            cancelled_order.status = 'cancel_requested'
-            cancelled_order.save()
+            # 2. Меняем статус самого заказа (как у нас прописано в профиле)
+            order.status = 'cancel_requested'
+            order.save()
 
-            # Показываем красивое зеленое окошко об успехе
+            # Сохраняем саму форму (если данные пишутся в модель заказа или отдельную модель)
+            cancel_request.save()
+
+            # 3. Создаем красивое зеленое уведомление для пользователя
             messages.success(request,
-                             f'Запрос на отмену заказа №{order.id} успешно отправлен. Менеджер свяжется с вами или отменит заказ в ближайшее время.')
+                             f'Заявка на отмену заказа №{order.id} отправлена. Пожалуйста, ожидайте рассмотрения.')
 
-            # Перекидываем в профиль прямо на вкладку заказов
-            return redirect(reverse('store:profile') + '#orders')
+            # 4. Выбрасываем пользователя в личный кабинет прямо на вкладку "Заказы"
+            url = reverse('store:profile') + '#orders'
+            return redirect(url)
+        else:
+            # Если форма невалидна (как на скрине), можно вывести ошибку в messages
+            messages.error(request, "Пожалуйста, выберите причину отмены из списка.")
     else:
         form = OrderCancelForm(instance=order)
 
-    return render(request, 'store/order_cancel.html', {'form': form, 'order': order})
+    return render(request, 'store/order_cancel.html', {
+        'form': form,
+        'order': order
+    })
 
 
 @user_passes_test(is_store_admin, login_url='store:index')
@@ -949,18 +958,19 @@ def delete_product_image(request, image_id):
 def edit_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)
 
-    if post.author != request.user:
+    # Защита: редактировать может только автор (или менеджер/админ, если добавишь or request.user.is_staff)
+    if post.author != request.user and not request.user.is_staff:
         messages.error(request, "У вас нет прав для редактирования этого поста.")
         return redirect('store:community')
 
-    # --- БЛОК ОБРАБОТКИ POST (СОЗДАНИЕ ПОСТА) ---
     if request.method == 'POST':
-        form = PostForm(request.POST, instance=post)
+        # ИСПРАВЛЕНО: Передаем user=request.user, чтобы форма знала, чьих питомцев фильтровать
+        form = PostForm(request.POST, request.FILES, instance=post, user=request.user)
         if form.is_valid():
-            # Просто сохраняем обновленный текст
+            # Сохраняем обновленный текст и привязанного питомца
             updated_post = form.save()
 
-            # Ищем теги
+            # Ищем теги в тексте
             hashtags = re.findall(r'#([а-яА-ЯёЁa-zA-Z0-9_]+)', updated_post.text)
 
             # Очищаем старые связи и привязываем новые
@@ -969,14 +979,17 @@ def edit_post(request, post_id):
                 tag_obj, _ = Tag.objects.get_or_create(name=tag_name.lower())
                 updated_post.tags.add(tag_obj)
 
+            # Сохраняем новые фотографии, если они были прикреплены
             files = request.FILES.getlist('images_input')
             for f in files:
                 ImageGallery.objects.create(post=updated_post, image=f)
 
             messages.success(request, "Пост успешно обновлен!")
-            return redirect('store:community')
+            # Перенаправляем пользователя на детальную страницу этого поста, чтобы он сразу видел результат
+            return redirect('store:post_detail', post_id=updated_post.id)
     else:
-        form = PostForm(instance=post)
+        # ИСПРАВЛЕНО: Передаем user=request.user при GET-запросе, чтобы выпадающий список сразу загрузился отфильтрованным
+        form = PostForm(instance=post, user=request.user)
 
     return render(request, 'store/edit_post.html', {'form': form, 'post': post})
 
@@ -1051,6 +1064,76 @@ def delete_post(request, post_id):
 
     return redirect('store:community')
 
+
+@user_passes_test(is_store_admin, login_url='store:index')
+def export_report_csv(request):
+    """Экспорт отчета о продажах в CSV (Excel)"""
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+
+    if not start_date_str or not end_date_str:
+        return redirect('store:manager_orders')
+
+    start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+    end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date()
+
+    orders = Order.objects.filter(
+        status='completed',
+        created_at__gte=start_date,
+        created_at__lt=end_date + datetime.timedelta(days=1)
+    )
+
+    daily_stats = {}
+    delta = end_date - start_date
+    for i in range(delta.days + 1):
+        day = start_date + datetime.timedelta(days=i)
+        daily_stats[day.strftime('%d.%m.%Y')] = {'revenue': 0, 'count': 0}
+
+    for order in orders:
+        day_str = order.created_at.strftime('%d.%m.%Y')
+        if day_str in daily_stats:
+            daily_stats[day_str]['revenue'] += order.get_total_cost()
+            daily_stats[day_str]['count'] += 1
+
+    # Подготавливаем HTTP-ответ с файлом CSV
+    response = HttpResponse(content_type='text/csv')
+    # Добавляем BOM, чтобы Excel корректно читал русский язык (UTF-8)
+    response.write('\ufeff'.encode('utf8'))
+    response['Content-Disposition'] = f'attachment; filename="report_{start_date_str}_{end_date_str}.csv"'
+
+    # Указываем delimiter=';', так как русский Excel лучше всего понимает разделитель точкой с запятой
+    writer = csv.writer(response, delimiter=';')
+    writer.writerow(['Дата', 'Выручка (руб.)', 'Количество заказов'])
+
+    total_revenue = 0
+    total_count = 0
+
+    for day_str, stats in daily_stats.items():
+        writer.writerow([day_str, float(stats['revenue']), stats['count']])
+        total_revenue += float(stats['revenue'])
+        total_count += stats['count']
+
+    writer.writerow([]) # Пустая строка
+    writer.writerow(['ИТОГО', total_revenue, total_count])
+
+    return response
+
+@user_passes_test(is_store_admin, login_url='store:index')
+@require_POST
+def bulk_delete_orders(request):
+    # Получаем список ID заказов из POST-запроса
+    order_ids = request.POST.getlist('order_ids')
+
+    if order_ids:
+        # Ищем заказы с этими ID и удаляем их пачкой (очень быстро)
+        deleted_count, _ = Order.objects.filter(id__in=order_ids).delete()
+        messages.success(request, f"Успешно удалено заказов: {deleted_count} шт.")
+    else:
+        messages.warning(request, "Не выбрано ни одного заказа для удаления.")
+
+    # Возвращаемся обратно на страницу заказов, сразу открыв вкладку архива (через хэш #archivedOrders)
+    return redirect(reverse('store:manager_orders') + '#archivedOrders')
+
 @user_passes_test(is_store_admin, login_url='store:index')
 def manager_report(request):
     """Генерация отчета о продажах с графиками"""
@@ -1088,9 +1171,11 @@ def manager_report(request):
             daily_stats[day_str]['revenue'] += order.get_total_cost()
             daily_stats[day_str]['count'] += 1
 
-    # Разбиваем словари на списки для передачи в JavaScript
+    # --- НАШЕ ИСПРАВЛЕНИЕ НАЧИНАЕТСЯ ЗДЕСЬ ---
     dates = list(daily_stats.keys())
-    revenues = [stats['revenue'] for stats in daily_stats.values()]
+
+    # 1. Обязательно оборачиваем revenue во float(), чтобы избавиться от Decimal
+    revenues = [float(stats['revenue']) for stats in daily_stats.values()]
     counts = [stats['count'] for stats in daily_stats.values()]
 
     context = {
@@ -1098,6 +1183,9 @@ def manager_report(request):
         'end_date': end_date_str,
         'total_revenue': sum(revenues),
         'total_orders': sum(counts),
+
+        # 2. ИСПРАВЛЕНО: УБРАЛИ json.dumps(). Передаем обычные Python-списки!
+        # Django сам превратит их в JSON с помощью тега json_script в шаблоне
         'dates': dates,
         'revenues': revenues,
         'counts': counts,

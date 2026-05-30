@@ -59,7 +59,7 @@
                             <th>Клиент</th>
                             <th>Дата</th>
                             <th>Сумма</th>
-                            <th>Статус менеджера</th>
+                            <th>Статус</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -70,17 +70,54 @@
                             <td>{{ order.created_at|date:"d.m.Y H:i" }}</td>
                             <td>{{ order.get_total_cost|default:"—" }} руб.</td>
                             <td>
-                                <form action="{% url 'store:change_order_status' order.id %}" method="post" class="d-flex align-items-center gap-2 m-0">
-                                    {% csrf_token %}
-                                    <select name="status" class="form-select form-select-sm fw-bold bg-white" style="max-width: 200px;">
-                                        {% for key, value in status_choices %}
-                                            <option value="{{ key }}" {% if order.status == key %}selected{% endif %}>{{ value }}</option>
-                                        {% endfor %}
-                                    </select>
-                                    <button type="submit" class="btn btn-sm btn-success">💾</button>
-                                </form>
+                                <div class="d-flex align-items-center gap-2">
+                                    <form action="{% url 'store:change_order_status' order.id %}" method="post" class="d-flex align-items-center gap-2 m-0">
+                                        {% csrf_token %}
+                                        <select name="status" class="form-select form-select-sm fw-bold bg-white" style="max-width: 200px;">
+                                            {% for key, value in status_choices %}
+                                                <option value="{{ key }}" {% if order.status == key %}selected{% endif %}>{{ value }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-success">💾</button>
+                                    </form>
+
+                                    {% if order.status == 'cancel_requested' %}
+                                        <button type="button" class="btn btn-sm btn-warning fw-bold text-dark border shadow-sm" data-bs-toggle="modal" data-bs-target="#cancelInfoModal{{ order.id }}" title="Посмотреть причину отмены">
+                                            👁️ Инфо
+                                        </button>
+                                    {% endif %}
+                                </div>
                             </td>
                         </tr>
+
+                        {% if order.status == 'cancel_requested' %}
+                        <div class="modal fade" id="cancelInfoModal{{ order.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content border-0 shadow-lg rounded-4">
+                                    <div class="modal-header bg-warning bg-opacity-25 border-bottom-0 pt-4 pb-3">
+                                        <h5 class="modal-title fw-bold">🛑 Запрос на отмену (Заказ №{{ order.id }})</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                                    </div>
+                                    <div class="modal-body px-4 py-4">
+                                        <div class="mb-3">
+                                            <p class="text-muted small text-uppercase fw-bold mb-1">Причина отмены:</p>
+                                            <p class="fs-5 fw-bold mb-0 text-dark">
+                                                {{ order.get_cancel_reason_display|default:order.cancel_reason }}
+                                            </p>
+                                        </div>
+                                        <div class="mb-0 bg-light p-3 rounded-3 border">
+                                            <p class="text-muted small text-uppercase fw-bold mb-1">Комментарий клиента:</p>
+                                            <p class="mb-0 text-dark" style="white-space: pre-line;">{{ order.cancel_reason_text|default:"Клиент не оставил комментарий." }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer border-top-0 pb-4 px-4">
+                                        <button type="button" class="btn btn-secondary fw-bold px-4" data-bs-dismiss="modal">Закрыть</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
                         {% empty %}
                         <tr><td colspan="5" class="text-center py-4 text-muted">Нет активных заказов.</td></tr>
                         {% endfor %}
@@ -111,38 +148,92 @@
                 </form>
             </div>
         </div>
-        <div class="card shadow-sm border-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0 opacity-75">
-                    <thead class="table-light">
-                        <tr>
-                            <th>№ Заказа</th>
-                            <th>Клиент</th>
-                            <th>Дата</th>
-                            <th>Сумма</th>
-                            <th>Итоговый Статус</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for order in archived_orders %}
-                        <tr class="{% if order.status == 'completed' %}table-success-subtle{% else %}table-danger-subtle{% endif %}">
-                            <td><span class="text-muted">№{{ order.id }}</span></td>
-                            <td>{{ order.first_name }} {{ order.last_name }}</td>
-                            <td>{{ order.created_at|date:"d.m.Y" }}</td>
-                            <td>{{ order.get_total_cost|default:"—" }} руб.</td>
-                            <td>
-                                <span class="badge {% if order.status == 'completed' %}bg-success{% else %}bg-danger{% endif %} py-2 px-3 fs-6">
-                                    {{ order.get_status_display }}
-                                </span>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr><td colspan="5" class="text-center py-4 text-muted">Архив пока пуст.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+
+        <form action="{% url 'store:bulk_delete_orders' %}" method="post" id="bulkDeleteForm">
+            {% csrf_token %}
+
+            <div class="d-flex justify-content-end mb-2">
+                <button type="submit" class="btn btn-sm btn-danger fw-bold shadow-sm" id="deleteSelectedBtn" disabled onclick="return confirm('Вы уверены, что хотите навсегда удалить выбранные заказы из базы данных? Это действие необратимо.');">
+                    🗑️ Удалить выбранные
+                </button>
             </div>
-        </div>
+
+            <div class="card shadow-sm border-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 opacity-75">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 40px; padding-left: 1rem;">
+                                    <input class="form-check-input" type="checkbox" id="selectAllArchive" style="cursor: pointer;">
+                                </th>
+                                <th>№ Заказа</th>
+                                <th>Клиент</th>
+                                <th>Дата</th>
+                                <th>Сумма</th>
+                                <th>Итоговый Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in archived_orders %}
+                            <tr class="{% if order.status == 'completed' %}table-success-subtle{% else %}table-danger-subtle{% endif %}">
+                                <td style="padding-left: 1rem;">
+                                    <input class="form-check-input archive-checkbox" type="checkbox" name="order_ids" value="{{ order.id }}" style="cursor: pointer;">
+                                </td>
+                                <td><span class="text-muted">№{{ order.id }}</span></td>
+                                <td>{{ order.first_name }} {{ order.last_name }}</td>
+                                <td>{{ order.created_at|date:"d.m.Y" }}</td>
+                                <td>{{ order.get_total_cost|default:"—" }} руб.</td>
+                                <td>
+                                    <span class="badge {% if order.status == 'completed' %}bg-success{% else %}bg-danger{% endif %} py-2 px-3 fs-6">
+                                        {{ order.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center py-4 text-muted">Архив пока пуст.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Логика массового выделения в архиве
+    const selectAllCheckbox = document.getElementById('selectAllArchive');
+    const archiveCheckboxes = document.querySelectorAll('.archive-checkbox');
+    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+
+    if (selectAllCheckbox) {
+        // При клике на "Выбрать все"
+        selectAllCheckbox.addEventListener('change', function() {
+            archiveCheckboxes.forEach(cb => {
+                cb.checked = selectAllCheckbox.checked;
+            });
+            toggleDeleteButton();
+        });
+
+        // При клике на отдельный чекбокс
+        archiveCheckboxes.forEach(cb => {
+            cb.addEventListener('change', toggleDeleteButton);
+        });
+
+        // Функция включения/выключения кнопки удаления
+        function toggleDeleteButton() {
+            const checkedCount = document.querySelectorAll('.archive-checkbox:checked').length;
+            // Кнопка активна, только если выбрано > 0 элементов
+            deleteSelectedBtn.disabled = checkedCount === 0;
+
+            // Если сняли галочку с одного, снимаем галочку с "Выбрать все"
+            if (checkedCount < archiveCheckboxes.length) {
+                selectAllCheckbox.checked = false;
+            } else if (checkedCount === archiveCheckboxes.length && checkedCount > 0) {
+                selectAllCheckbox.checked = true;
+            }
+        }
+    }
+});
+</script>
 {% endblock %}

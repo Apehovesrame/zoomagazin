@@ -185,6 +185,7 @@ class ProductForm(forms.ModelForm):
             'target_activity': forms.Select(choices=ACTIVITY_CHOICES, attrs={'class': 'form-select'}),
         }
 
+
 class PostForm(forms.ModelForm):
     class Meta:
         model = Post
@@ -193,7 +194,6 @@ class PostForm(forms.ModelForm):
             'text': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 4,
-                # Меняем плейсхолдер на более универсальный:
                 'placeholder': 'Напишите обзор на товар, задайте вопрос или поделитесь фото... Не забудьте #хештеги!'
             }),
             'image': forms.FileInput(attrs={'class': 'form-control'}),
@@ -201,12 +201,20 @@ class PostForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        # Вытаскиваем юзера из kwargs, если он передан (обычно при создании)
         user = kwargs.pop('user', None)
         super(PostForm, self).__init__(*args, **kwargs)
+
+        # Если юзер не передан (при редактировании), пробуем взять автора из редактируемого поста
+        if not user and self.instance and hasattr(self.instance, 'author'):
+            user = self.instance.author
+
+        # Фильтруем питомцев: только питомцы автора поста
         if user:
             self.fields['pet'].queryset = Pet.objects.filter(user=user)
-            # Меняем текст пустого выбора, чтобы было понятно, что питомец не обязателен
-            self.fields['pet'].empty_label = "Обычный пост (без питомца)"
+
+        # Меняем текст пустого выбора
+        self.fields['pet'].empty_label = "Обычный пост (без питомца)"
 
 class CommentForm(forms.ModelForm):
     class Meta:

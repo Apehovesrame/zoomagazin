@@ -73,6 +73,7 @@
 
         {% for post in posts %}
         <div class="card shadow-sm border-0 mb-4" id="post-{{ post.id }}">
+
             <div class="card-header bg-white border-0 pt-4 pb-2 d-flex align-items-center">
                 {% if post.author.avatar %}
                     <img src="{{ post.author.avatar.url }}" class="rounded-circle me-3 border" style="width: 50px; height: 50px; object-fit: cover;">
@@ -97,6 +98,7 @@
                         </span>
                     </a>
                 {% endif %}
+
                 {% if request.user == post.author or request.user.is_staff %}
                     <div class="dropdown">
                         <button class="btn btn-sm btn-light border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -119,94 +121,59 @@
                 {% endif %}
             </div>
 
-            <div class="card-body">
-                <p class="fs-6 mb-3" style="white-space: pre-line;">{{ post.text|hide_hashtags }}</p>
+            <a href="{% url 'store:post_detail' post.id %}" class="text-decoration-none text-dark card-body-link">
+                <div class="card-body pt-2">
 
-                {% if post.tags.all %}
-                    <div class="mb-3">
-                        {% for tag in post.tags.all %}
-                            <a href="{% url 'store:community' %}?tag={{ tag.name }}"
-                               class="text-decoration-none me-2 fw-bold text-primary">#{{ tag.name }}</a>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-
-                {% if post.images.all %}
-                    <div id="carouselPost{{ post.id }}" class="carousel slide mt-3 shadow-sm rounded" data-bs-ride="carousel">
-                        <div class="carousel-indicators">
-                            {% for img in post.images.all %}
-                                <button type="button" data-bs-target="#carouselPost{{ post.id }}" data-bs-slide-to="{{ forloop.counter0 }}"
-                                        class="{% if forloop.first %}active{% endif %}" aria-current="true"></button>
-                            {% endfor %}
-                        </div>
-
-                        <div class="carousel-inner rounded">
-                            {% for img in post.images.all %}
-                                <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                                    <img src="{{ img.image.url }}" class="d-block w-100" style="max-height: 400px; object-fit: contain; background: #f8f9fa;" alt="Фото поста">
-                                </div>
-                            {% endfor %}
-                        </div>
-
-                        {% if post.images.count > 1 %}
-                            <button class="carousel-control-prev" type="button" data-bs-target="#carouselPost{{ post.id }}" data-bs-slide="prev">
-                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                            </button>
-                            <button class="carousel-control-next" type="button" data-bs-target="#carouselPost{{ post.id }}" data-bs-slide="next">
-                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                            </button>
+                    <p class="fs-6 mb-3 text-preview" style="white-space: pre-line;">
+                        {{ post.text|hide_hashtags|truncatechars:300 }}
+                        {% if post.text|length > 300 %}
+                            <span class="text-primary fw-bold">Читать далее...</span>
                         {% endif %}
-                    </div>
-                {% endif %}
-            </div>
+                    </p>
 
-            <div class="card-footer bg-white border-top-0 pt-0 pb-4">
-                <div class="d-flex align-items-center gap-4 mb-3 border-bottom pb-3">
-                    <button class="btn btn-link text-decoration-none p-0 border-0 fs-5 transition-scale like-btn"
-                            data-url="{% url 'store:like_post' post.id %}">
+                    {% if post.tags.all %}
+                        <div class="mb-3">
+                            {% for tag in post.tags.all %}
+                                <span class="me-2 fw-bold text-primary">#{{ tag.name }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    {% if post.images.all %}
+                        <div class="position-relative rounded overflow-hidden shadow-sm bg-light" style="max-height: 400px;">
+                            <img src="{{ post.images.first.image.url }}" class="d-block w-100" style="max-height: 400px; object-fit: cover;" alt="Фото поста">
+
+                            {% if post.images.count > 1 %}
+                                <div class="position-absolute top-0 end-0 m-2 bg-dark bg-opacity-75 text-white px-2 py-1 rounded small fw-bold" style="backdrop-filter: blur(4px);">
+                                    🖼️ +{{ post.images.count|add:"-1" }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </a>
+
+            <div class="card-footer bg-white border-top-0 pt-0 pb-3">
+                <div class="d-flex align-items-center gap-4">
+                    <button class="btn btn-link text-decoration-none p-0 border-0 fs-5 transition-scale like-btn" data-url="{% url 'store:like_post' post.id %}">
                         <span class="like-icon">
                             {% if request.user in post.likes.all %}❤️{% else %}🤍{% endif %}
                         </span>
                         <span class="fw-bold text-dark fs-6 like-count">{{ post.likes.count }}</span>
                     </button>
 
-                    <span class="text-muted fs-5 cursor-default">
-                        💬 <span class="fw-bold fs-6 comments-count-badge">{{ post.comments.count }}</span>
-                    </span>
-                </div>
-
-                <div class="comments-section ps-2">
-                    <div class="comments-list">
-                        {% for comment in post.comments.all %}
-                            <div class="d-flex mb-3">
-                                <div class="bg-secondary text-white rounded-circle d-flex justify-content-center align-items-center me-2 mt-1" style="width: 32px; height: 32px; font-size: 0.8rem;">
-                                    {{ comment.author.username|make_list|first|upper }}
-                                </div>
-
-                                <div class="bg-light rounded p-2 px-3 w-100 border">
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <span class="fw-bold small text-dark">{{ comment.author.username }}</span>
-                                        <span class="text-muted" style="font-size: 0.75rem;">{{ comment.created_at|date:"d.m.Y H:i" }}</span>
-                                    </div>
-                                    <p class="mb-0 small text-break">{{ comment.text }}</p>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-
-                    <form action="{% url 'store:add_comment' post.id %}" method="post" class="d-flex mt-3 ms-4 ajax-comment-form">
-                        {% csrf_token %}
-                        <input type="text" name="text" class="form-control form-control-sm me-2 bg-light border-0" placeholder="Написать комментарий..." required>
-                        <button type="submit" class="btn btn-sm btn-outline-primary fw-bold px-3">Отправить</button>
-                    </form>
+                    <a href="{% url 'store:post_detail' post.id %}" class="text-decoration-none text-muted fs-5 transition-scale">
+                        💬 <span class="fw-bold fs-6 text-dark">{{ post.comments.count }}</span>
+                    </a>
                 </div>
             </div>
+
         </div>
         {% empty %}
-        <div class="text-center py-5 text-muted bg-white rounded shadow-sm border border-dashed">
+        <div class="text-center py-5 text-muted bg-white rounded shadow-sm border border-dashed border-2">
             <span class="display-1 d-block mb-3">📸</span>
             <h4 class="fw-bold">Лента пока пуста</h4>
-            <p>Станьте первым, кто поделится фотографией или историей своего питомца!</p>
+            <p class="mb-0">Станьте первым, кто поделится фотографией или историями своего питомца!</p>
         </div>
         {% endfor %}
 
@@ -221,8 +188,18 @@
     .transition-scale:hover {
         transform: scale(1.1);
     }
-    .cursor-default {
-        cursor: default;
+    .card-body-link {
+        display: block;
+        transition: opacity 0.2s ease;
+    }
+    .card-body-link:hover .text-preview {
+        color: #495057 !important;
+    }
+    .card-body-link:hover img {
+        opacity: 0.95;
+    }
+    .border-dashed {
+        border-style: dashed !important;
     }
 </style>
 
@@ -230,7 +207,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     const getCsrfToken = () => document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-    // --- ЛОГИКА ЛАЙКОВ ---
     document.querySelectorAll('.like-btn').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
@@ -251,67 +227,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 countSpan.textContent = data.likes_count;
             })
             .catch(error => console.error('Ошибка лайка:', error));
-        });
-    });
-
-    // --- ЛОГИКА КОММЕНТАРИЕВ ---
-    document.querySelectorAll('.ajax-comment-form').forEach(form => {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const url = this.action;
-            const inputField = this.querySelector('input[name="text"]');
-            const textValue = inputField.value;
-            const submitBtn = this.querySelector('button[type="submit"]');
-
-            submitBtn.disabled = true;
-
-            const formData = new URLSearchParams();
-            formData.append('text', textValue);
-
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCsrfToken(),
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if(data.success) {
-                    inputField.value = '';
-
-                    const newCommentHtml = `
-                        <div class="d-flex mb-3">
-                            <div class="bg-secondary text-white rounded-circle d-flex justify-content-center align-items-center me-2 mt-1" style="width: 32px; height: 32px; font-size: 0.8rem;">
-                                ${data.author_initial}
-                            </div>
-                            <div class="bg-light rounded p-2 px-3 w-100 border">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <span class="fw-bold small text-dark">${data.author}</span>
-                                    <span class="text-muted" style="font-size: 0.75rem;">${data.date}</span>
-                                </div>
-                                <p class="mb-0 small text-break">${data.text}</p>
-                            </div>
-                        </div>
-                    `;
-
-                    const commentsList = this.closest('.comments-section').querySelector('.comments-list');
-                    commentsList.insertAdjacentHTML('beforeend', newCommentHtml);
-
-                    const postCard = this.closest('.card-footer');
-                    const commentsCountBadge = postCard.querySelector('.comments-count-badge');
-                    if (commentsCountBadge) {
-                        commentsCountBadge.textContent = data.comments_count;
-                    }
-                }
-            })
-            .catch(error => console.error('Ошибка комментария:', error))
-            .finally(() => {
-                submitBtn.disabled = false;
-            });
         });
     });
 });

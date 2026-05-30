@@ -79,6 +79,10 @@
                                         <a href="{% url 'store:request_order_cancel' order.id %}" class="btn btn-sm btn-outline-danger fw-bold px-3">
                                             🛑 Запросить отмену
                                         </a>
+                                    {% elif order.status == 'cancel_requested' %}
+                                        <span class="text-danger fw-bold small bg-danger bg-opacity-10 px-3 py-2 rounded">
+                                            ⏳ Заявка на рассмотрении
+                                        </span>
                                     {% endif %}
                                     <h5 class="text-primary mb-0 fw-bold">{{ order.get_total_cost }} руб.</h5>
                                 </div>

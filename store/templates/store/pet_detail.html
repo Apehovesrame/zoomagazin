@@ -56,7 +56,7 @@
         <ul class="nav nav-tabs mb-4" id="petProfileTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active fw-bold text-dark" id="posts-tab" data-bs-toggle="tab" data-bs-target="#posts" type="button" role="tab">
-                    📝 Посты питомца ({{ pet.post_set.count }})
+                    📝 Посты питомца ({{ posts.count }})
                 </button>
             </li>
             <li class="nav-item" role="presentation">
@@ -69,7 +69,7 @@
         <div class="tab-content" id="petProfileTabsContent">
 
             <div class="tab-pane fade show active" id="posts" role="tabpanel">
-                {% for post in pet.post_set.all %}
+                {% for post in posts %}
                     <div class="card shadow-sm border-0 mb-4 rounded-4">
                         <div class="card-body p-4">
                             <p class="card-text fs-5">{{ post.text }}</p>
@@ -92,8 +92,12 @@
                         </div>
 
                         <div class="card-footer bg-white border-top py-3 px-4 d-flex gap-3">
-                            <span class="text-muted fw-bold">❤️ Лайк</span>
-                            <span class="text-muted fw-bold">💬 Комментировать</span>
+                            <a href="{% url 'store:post_detail' post.id %}" class="text-decoration-none text-muted fw-bold">
+                                ❤️ Лайков: {{ post.num_likes }}
+                            </a>
+                            <a href="{% url 'store:post_detail' post.id %}" class="text-decoration-none text-muted fw-bold">
+                                💬 Комментариев: {{ post.num_comments }}
+                            </a>
                         </div>
                     </div>
                 {% empty %}
@@ -108,19 +112,75 @@
                     {% for img in pet.images.all %}
                         <div class="col">
                             <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden position-relative">
-                                <img src="{{ img.image.url }}" class="card-img-top" style="height: 200px; object-fit: cover;">
+                                <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal{{ img.id }}">
+                                    <img src="{{ img.image.url }}" class="card-img-top" style="height: 200px; object-fit: cover; transition: 0.3s;" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1">
+                                </a>
 
                                 <div class="card-body p-2 bg-light d-flex justify-content-between align-items-center border-top">
-                                    <button class="btn btn-sm btn-light text-danger fw-bold border-0 shadow-none">
-                                        ❤️ <span class="text-dark">0</span>
-                                    </button>
-                                    <button class="btn btn-sm btn-light text-primary fw-bold border-0 shadow-none">
-                                        💬 <span class="text-dark">0</span>
+                                    <form action="{% url 'store:like_pet_image' img.id %}" method="post" class="m-0">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-light text-danger fw-bold border-0 shadow-none">
+                                            {% if request.user in img.likes.all %}❤️{% else %}🤍{% endif %} <span class="text-dark">{{ img.total_likes }}</span>
+                                        </button>
+                                    </form>
+
+                                    <button class="btn btn-sm btn-light text-primary fw-bold border-0 shadow-none" data-bs-toggle="modal" data-bs-target="#imageModal{{ img.id }}">
+                                        💬 <span class="text-dark">{{ img.gallery_comments.count }}</span>
                                     </button>
                                 </div>
                             </div>
                         </div>
-                    {% empty %}
+
+                        <div class="modal fade" id="imageModal{{ img.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered modal-lg">
+                                <div class="modal-content border-0 rounded-4 overflow-hidden">
+                                    <div class="row g-0">
+                                        <div class="col-md-7 bg-dark d-flex align-items-center justify-content-center">
+                                            <img src="{{ img.image.url }}" class="img-fluid w-100" style="max-height: 80vh; object-fit: contain;">
+                                        </div>
+                                        <div class="col-md-5 d-flex flex-column" style="max-height: 80vh;">
+                                            <div class="modal-header border-bottom">
+                                                <h6 class="modal-title fw-bold">Фото: {{ pet.name }}</h6>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                                            </div>
+
+                                            <div class="modal-body overflow-auto" style="flex-grow: 1; background-color: #fefefe;">
+                                                {% for comment in img.gallery_comments.all %}
+                                                    <div class="mb-3 border-bottom pb-2">
+                                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                                            <strong class="small text-primary">@{{ comment.author.username }}</strong>
+                                                            <span class="text-muted" style="font-size: 0.75rem;">{{ comment.created_at|date:"d M Y, H:i" }}</span>
+                                                        </div>
+                                                        <p class="mb-0 small text-dark" style="white-space: pre-line;">{{ comment.text }}</p>
+                                                    </div>
+                                                {% empty %}
+                                                    <div class="text-center text-muted mt-5 small py-4">
+                                                        Здесь пока нет комментариев.<br>Будьте первым, кто оставит его!
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+
+                                            <div class="modal-footer border-top p-3 bg-light">
+                                                {% if request.user.is_authenticated %}
+                                                    <form action="{% url 'store:add_pet_image_comment' img.id %}" method="post" class="w-100 d-flex gap-2 align-items-end">
+                                                        {% csrf_token %}
+                                                        <div class="flex-grow-1">
+                                                            {{ comment_form.text }}
+                                                        </div>
+                                                        <button type="submit" class="btn btn-primary btn-sm fw-bold px-3 shadow-sm" style="height: fit-content; margin-bottom: 2px;">Отправить</button>
+                                                    </form>
+                                                {% else %}
+                                                    <div class="w-100 text-center py-2">
+                                                        <a href="{% url 'store:login' %}" class="small text-decoration-none fw-bold">Войдите в аккаунт</a>, чтобы комментировать.
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
                         <div class="col-12">
                             <div class="alert alert-light border text-center py-5 rounded-4 shadow-sm w-100">
                                 <p class="text-muted mb-0">В галерее пока нет фотографий.</p>
@@ -133,19 +193,27 @@
         </div>
     </div>
 </div>
+
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        // Проверяем, есть ли в URL хэш (например, #gallery)
+        // 1. Проверяем хэш при загрузке страницы
         let hash = window.location.hash;
         if (hash) {
-            // Находим кнопку вкладки, которая соответствует этому хэшу
             let tabButton = document.querySelector(`button[data-bs-target="${hash}"]`);
             if (tabButton) {
-                // Заставляем Bootstrap принудительно открыть эту вкладку
                 let tab = new bootstrap.Tab(tabButton);
                 tab.show();
             }
         }
+
+        // 2. Обновляем хэш в строке браузера при ручном переключении вкладок пользователем
+        let tabButtons = document.querySelectorAll('button[data-bs-toggle="tab"]');
+        tabButtons.forEach(button => {
+            button.addEventListener('shown.bs.tab', function (e) {
+                let targetHash = e.target.getAttribute('data-bs-target');
+                history.replaceState(null, null, targetHash);
+            });
+        });
     });
 </script>
 {% endblock %}

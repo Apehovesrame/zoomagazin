@@ -38,11 +38,36 @@ class OrderItemInline(admin.TabularInline):
     raw_id_fields = ['product'] # Удобный выбор товара по ID
     extra = 0  # Не показывать лишние пустые строки по умолчанию
 
+
 # 5. Настройка отображения заказов
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['id', 'first_name', 'last_name', 'email', 'phone', 'city', 'paid', 'created_at', 'status']
-    list_filter = ['paid', 'created_at', 'status']
-    list_editable = ['paid', 'status']
+    # Оставляем твой список, но статус выгодно перенести поближе к началу
+    list_display = ['id', 'status', 'first_name', 'last_name', 'email', 'phone', 'city', 'paid', 'created_at']
+
+    # Добавляем 'status' в фильтры, чтобы менеджер мог в 1 клик найти все "Ожидает отмены"
+    list_filter = ['status', 'paid', 'created_at']
+    list_editable = ['status', 'paid']
     search_fields = ('id', 'first_name', 'last_name', 'phone')
     inlines = [OrderItemInline]
+
+    # Фиксируем поля отмены, чтобы менеджер не мог случайно изменить или стереть текст клиента
+    readonly_fields = ['cancel_reason', 'cancel_reason_text', 'created_at']
+
+    # Группируем поля внутри заказа, чтобы админка выглядела аккуратно
+    fieldsets = (
+        ('Статус заказа', {
+            'fields': ('status', 'paid', 'created_at')
+        }),
+        ('Информация о клиенте', {
+            'fields': ('first_name', 'last_name', 'email', 'phone')
+        }),
+        ('Адрес доставки', {
+            'fields': ('city', 'address')
+        }),
+        # НАШ НОВЫЙ БЛОК: Появится в самом низу карточки заказа
+        ('Запрос на отмену заказа', {
+            'fields': ('cancel_reason', 'cancel_reason_text'),
+            'description': 'Заполняется автоматически, если клиент отправил запрос на отмену из личного кабинета.'
+        }),
+    )

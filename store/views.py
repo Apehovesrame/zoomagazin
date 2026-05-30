@@ -22,7 +22,7 @@ from django.conf import settings
 import datetime
 from django.utils import timezone
 from .forms import OrderCancelForm
-
+from django.urls import reverse
 
 
 def index(request):
@@ -543,7 +543,8 @@ def edit_pet(request, pet_id):
                 ImageGallery.objects.create(pet=pet, image=f)
 
             messages.success(request, f'Данные питомца {pet.name} успешно обновлены!')
-            return redirect('store:profile')
+            url = reverse('store:profile') + '#pets'
+            return redirect(url)
     else:
         form = PetForm(instance=pet)
 
@@ -685,34 +686,34 @@ def delete_product(request, product_id):
 
 @login_required
 def request_order_cancel(request, order_id):
-    """Страница опросника и отправка запроса на отмену заказа"""
+    # Получаем заказ, убедившись, что он принадлежит текущему юзеру
     order = get_object_or_404(Order, id=order_id, user=request.user)
 
-    # Защита: отменить можно только заказ, который еще в работе
-    if order.status != 'in_progress':
-        messages.error(request, 'Этот заказ сейчас нельзя отменить.')
-        return redirect('store:profile')
+    # Если заказ уже отменен или выполнен, не даем запросить отмену снова
+    if order.status in ['cancelled', 'cancel_requested', 'completed']:
+        messages.warning(request, 'Для этого заказа нельзя запросить отмену.')
+        return redirect(reverse('store:profile') + '#orders')
 
     if request.method == 'POST':
-        # Создаем форму, привязанную к конкретному объекту заказа (instance=order)
         form = OrderCancelForm(request.POST, instance=order)
         if form.is_valid():
-            # Сохраняем причину отмены и меняем статус заказа
-            order = form.save(commit=False)
-            order.status = 'cancel_requested'
-            order.save()
+            # Сохраняем форму (это запишет cancel_reason и cancel_reason_text в БД)
+            cancelled_order = form.save(commit=False)
 
-            messages.warning(request,
-                             f'Запрос на отмену заказа №{order.id} отправлен администрации. Спасибо, что объяснили причину!')
-            return redirect('store:profile')
+            # МЕНЯЕМ СТАТУС ЗАКАЗА
+            cancelled_order.status = 'cancel_requested'
+            cancelled_order.save()
+
+            # Показываем красивое зеленое окошко об успехе
+            messages.success(request,
+                             f'Запрос на отмену заказа №{order.id} успешно отправлен. Менеджер свяжется с вами или отменит заказ в ближайшее время.')
+
+            # Перекидываем в профиль прямо на вкладку заказов
+            return redirect(reverse('store:profile') + '#orders')
     else:
-        # При первом заходе на страницу создаем пустую форму
         form = OrderCancelForm(instance=order)
 
-    return render(request, 'store/order_cancel.html', {
-        'form': form,
-        'order': order
-    })
+    return render(request, 'store/order_cancel.html', {'form': form, 'order': order})
 
 
 @user_passes_test(is_store_admin, login_url='store:index')

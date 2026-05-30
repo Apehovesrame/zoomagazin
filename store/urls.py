@@ -49,6 +49,9 @@ urlpatterns = [
 
     path('logout/', views.user_logout, name='logout'),
 
+    path('post/<int:post_id>/', views.post_detail, name='post_detail'),
+    path('post/<int:post_id>/like/', views.toggle_like, name='toggle_like'),
+
     # Вход и Выход (используем встроенные CBV Django)
     path('login/', auth_views.LoginView.as_view(template_name='store/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='/'), name='logout'),

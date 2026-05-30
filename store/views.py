@@ -981,6 +981,63 @@ def edit_post(request, post_id):
     return render(request, 'store/edit_post.html', {'form': form, 'post': post})
 
 
+# 1. Страница конкретного поста (фото + комментарии)
+def post_detail(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    # Получаем все комментарии к посту
+    comments = post.comments.all().order_by('-created_at')
+
+    if request.method == 'POST':
+        if not request.user.is_authenticated:
+            return redirect('login')  # Отправляем на авторизацию, если гость
+
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.post = post
+            comment.author = request.user
+            comment.save()
+            # После отправки комментария перезагружаем эту же страницу
+            return redirect('store:post_detail', post_id=post.id)
+    else:
+        form = CommentForm()
+
+    return render(request, 'store/post_detail.html', {
+        'post': post,
+        'comments': comments,
+        'form': form
+    })
+
+
+# 2. Механика лайков
+@login_required
+def toggle_like(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+
+    # 1. Меняем статус лайка
+    if request.user in post.likes.all():
+        post.likes.remove(request.user)
+        liked = False
+    else:
+        post.likes.add(request.user)
+        liked = True
+
+    # 2. Если лайк поставили через JavaScript (AJAX / Fetch)
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({
+            'liked': liked,
+            'likes_count': post.likes.count()
+        })
+
+    # 3. Если это обычный переход по кнопке (форма без JS)
+    # Правильно получаем прошлую страницу без вызова ошибки dict.get()
+    referer = request.META.get('HTTP_REFERER')
+    if referer:
+        return redirect(referer)
+
+    # Если прошлой страницы нет (например, перешли по прямой ссылке)
+    return redirect('store:post_detail', post_id=post.id)
+
 @login_required
 def delete_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)

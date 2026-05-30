@@ -4,17 +4,17 @@
 
 {% block content %}
 <div class="row justify-content-center mt-4 mb-5">
-    <div class="col-lg-8">
-        
-        <div class="mb-4">
+    <div class="col-lg-10"> <div class="mb-4">
             <a href="{% url 'store:community' %}" class="text-decoration-none text-muted fw-bold">← Вернуться в общую ленту</a>
         </div>
 
         <div class="card shadow-sm border-0 mb-5 bg-white rounded-4 overflow-hidden">
             <div class="bg-primary bg-opacity-10 py-4 px-4 border-bottom d-flex align-items-center">
-                
-                <div class="bg-white rounded-circle shadow-sm d-flex align-items-center justify-content-center me-4" style="width: 100px; height: 100px; font-size: 3rem;">
-                    {% if pet.species == 'Кошка' %}🐱
+
+                <div class="bg-white rounded-circle shadow-sm d-flex align-items-center justify-content-center me-4 overflow-hidden" style="width: 100px; height: 100px; font-size: 3rem; flex-shrink: 0;">
+                    {% if pet.images.all %}
+                        <img src="{{ pet.images.first.image.url }}" alt="{{ pet.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                    {% elif pet.species == 'Кошка' %}🐱
                     {% elif pet.species == 'Собака' %}🐶
                     {% else %}🐾{% endif %}
                 </div>
@@ -27,7 +27,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="card-body p-4 bg-light d-flex gap-4">
                 {% if pet.age %}
                 <div>
@@ -48,198 +48,63 @@
             </div>
         </div>
 
-        <h4 class="fw-bold mb-4">📸 Фотографии и истории</h4>
+        <h4 class="fw-bold mb-4">📸 Галерея {{ pet.name }}</h4>
 
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
         {% for post in posts %}
-        <div class="card shadow-sm border-0 mb-4" id="post-{{ post.id }}">
-            <div class="card-header bg-white border-0 pt-4 pb-2 d-flex align-items-center">
-                {% if post.author.avatar %}
-                    <img src="{{ post.author.avatar.url }}" class="rounded-circle me-3 border" style="width: 50px; height: 50px; object-fit: cover;">
-                {% else %}
-                    <div class="bg-secondary rounded-circle me-3 d-flex align-items-center justify-content-center text-white fw-bold shadow-sm" style="width: 50px; height: 50px;">
-                        {{ post.author.username|make_list|first|upper }}
-                    </div>
-                {% endif %}
+            <div class="col">
+                <a href="{% url 'store:post_detail' post.id %}" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100 position-relative bg-dark image-hover-card">
 
-                <div class="flex-grow-1">
-                    <h6 class="mb-0 fw-bold">
-                        {{ post.author.first_name }} {{ post.author.last_name }}
-                        <span class="text-muted fw-normal small">@{{ post.author.username }}</span>
-                    </h6>
-                    <small class="text-muted">{{ post.created_at|date:"d M Y в H:i" }}</small>
-                </div>
+                        {% if post.image %}
+                            <img src="{{ post.image.url }}" class="card-img-top opacity-75" style="height: 250px; object-fit: cover;" alt="Фото">
+                        {% elif post.images.first %}
+                            <img src="{{ post.images.first.image.url }}" class="card-img-top opacity-75" style="height: 250px; object-fit: cover;" alt="Фото">
+                        {% else %}
+                            <div class="bg-white d-flex align-items-center justify-content-center p-3 text-center border-bottom" style="height: 250px;">
+                                <span class="text-muted small text-break">{{ post.text|truncatechars:70 }}</span>
+                            </div>
+                        {% endif %}
 
-                {% if request.user == post.author or request.user.is_staff %}
-                    <div class="dropdown">
-                        <button class="btn btn-sm btn-light border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <span class="fs-5">⋮</span>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                            {% if request.user == post.author %}
-                                <li><a class="dropdown-item" href="{% url 'store:edit_post' post.id %}">✏️ Редактировать</a></li>
-                            {% endif %}
-                            <li>
-                                <form action="{% url 'store:delete_post' post.id %}" method="post" class="m-0 p-0">
-                                    {% csrf_token %}
-                                    <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Вы уверены, что хотите удалить этот пост?');">
-                                        🗑 Удалить
-                                    </button>
-                                </form>
-                            </li>
-                        </ul>
-                    </div>
-                {% endif %}
-            </div>
-
-            <div class="card-body">
-                <p class="fs-6 mb-3" style="white-space: pre-line;">{{ post.text }}</p>
-
-                {% if post.tags.all %}
-                    <div class="mb-3">
-                        {% for tag in post.tags.all %}
-                            <a href="{% url 'store:community' %}?tag={{ tag.name }}" class="text-decoration-none me-2 fw-bold text-primary">#{{ tag.name }}</a>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-
-                {% if post.images.all %}
-                    <div id="carouselPost{{ post.id }}" class="carousel slide mt-3 shadow-sm rounded" data-bs-ride="carousel">
-                        <div class="carousel-indicators">
-                            {% for img in post.images.all %}
-                                <button type="button" data-bs-target="#carouselPost{{ post.id }}" data-bs-slide-to="{{ forloop.counter0 }}" class="{% if forloop.first %}active{% endif %}" aria-current="true"></button>
-                            {% endfor %}
-                        </div>
-
-                        <div class="carousel-inner rounded">
-                            {% for img in post.images.all %}
-                                <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                                    <img src="{{ img.image.url }}" class="d-block w-100" style="max-height: 400px; object-fit: contain; background: #f8f9fa;">
-                                </div>
-                            {% endfor %}
+                        <div class="position-absolute bottom-0 start-0 w-100 p-2 bg-dark bg-opacity-75 text-white d-flex justify-content-around small fw-bold" style="backdrop-filter: blur(2px);">
+                            <span>❤️ {{ post.likes.count }}</span>
+                            <span>💬 {{ post.comments.count }}</span>
                         </div>
 
                         {% if post.images.count > 1 %}
-                            <button class="carousel-control-prev" type="button" data-bs-target="#carouselPost{{ post.id }}" data-bs-slide="prev">
-                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                            </button>
-                            <button class="carousel-control-next" type="button" data-bs-target="#carouselPost{{ post.id }}" data-bs-slide="next">
-                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                            </button>
+                            <div class="position-absolute top-0 end-0 p-2 text-white fs-5">
+                                🖼️
+                            </div>
                         {% endif %}
                     </div>
-                {% endif %}
+                </a>
             </div>
-
-            <div class="card-footer bg-white border-top-0 pt-0 pb-4">
-                <div class="d-flex align-items-center gap-4 mb-3 border-bottom pb-3">
-                    <button class="btn btn-link text-decoration-none p-0 border-0 fs-5 transition-scale like-btn" data-url="{% url 'store:like_post' post.id %}">
-                        <span class="like-icon">{% if request.user in post.likes.all %}❤️{% else %}🤍{% endif %}</span>
-                        <span class="fw-bold text-dark fs-6 like-count">{{ post.likes.count }}</span>
-                    </button>
-                    <span class="text-muted fs-5 cursor-default">
-                        💬 <span class="fw-bold fs-6 comments-count-badge">{{ post.comments.count }}</span>
-                    </span>
-                </div>
-
-                <div class="comments-section ps-2">
-                    <div class="comments-list">
-                        {% for comment in post.comments.all %}
-                            <div class="d-flex mb-3">
-                                <div class="bg-secondary text-white rounded-circle d-flex justify-content-center align-items-center me-2 mt-1" style="width: 32px; height: 32px; font-size: 0.8rem;">
-                                    {{ comment.author.username|make_list|first|upper }}
-                                </div>
-                                <div class="bg-light rounded p-2 px-3 w-100 border">
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <span class="fw-bold small text-dark">{{ comment.author.username }}</span>
-                                        <span class="text-muted" style="font-size: 0.75rem;">{{ comment.created_at|date:"d.m.Y H:i" }}</span>
-                                    </div>
-                                    <p class="mb-0 small text-break">{{ comment.text }}</p>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-
-                    <form action="{% url 'store:add_comment' post.id %}" method="post" class="d-flex mt-3 ms-4 ajax-comment-form">
-                        {% csrf_token %}
-                        <input type="text" name="text" class="form-control form-control-sm me-2 bg-light border-0" placeholder="Написать комментарий..." required>
-                        <button type="submit" class="btn btn-sm btn-outline-primary fw-bold px-3">Отправить</button>
-                    </form>
-                </div>
-            </div>
-        </div>
         {% empty %}
-        <div class="text-center py-5 text-muted bg-white rounded shadow-sm border border-dashed">
-            <span class="display-1 d-block mb-3">📭</span>
-            <h4 class="fw-bold">Нет записей</h4>
-            <p>У этого питомца пока нет фотографий.</p>
-        </div>
+            <div class="col-12">
+                <div class="text-center py-5 text-muted bg-white rounded-4 shadow-sm border border-dashed">
+                    <span class="display-3 d-block mb-3">📭</span>
+                    <h5 class="fw-bold text-dark">Галерея пуста</h5>
+                    <p class="mb-0 text-muted">У этого питомца пока нет опубликованных фотографий.</p>
+                </div>
+            </div>
         {% endfor %}
+        </div>
 
     </div>
 </div>
 
 <style>
-    .transition-scale { transition: transform 0.2s ease; }
-    .transition-scale:hover { transform: scale(1.05); }
-    .cursor-default { cursor: default; }
+    /* Плавное увеличение фото при наведении, как в инстаграме */
+    .image-hover-card img {
+        transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+    .image-hover-card:hover img {
+        transform: scale(1.05);
+        opacity: 0.9 !important;
+    }
+    .border-dashed {
+        border-style: dashed !important;
+        border-width: 2px !important;
+    }
 </style>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const getCsrfToken = () => document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-    document.querySelectorAll('.like-btn').forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            const url = this.dataset.url;
-            const iconSpan = this.querySelector('.like-icon');
-            const countSpan = this.querySelector('.like-count');
-
-            fetch(url, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': getCsrfToken(), 'X-Requested-With': 'XMLHttpRequest' }
-            }).then(res => res.json()).then(data => {
-                iconSpan.innerHTML = data.liked ? '❤️' : '🤍';
-                countSpan.textContent = data.likes_count;
-            }).catch(err => console.error(err));
-        });
-    });
-
-    document.querySelectorAll('.ajax-comment-form').forEach(form => {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const url = this.action;
-            const inputField = this.querySelector('input[name="text"]');
-            const submitBtn = this.querySelector('button[type="submit"]');
-            
-            submitBtn.disabled = true;
-            const formData = new URLSearchParams();
-            formData.append('text', inputField.value);
-
-            fetch(url, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': getCsrfToken(), 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: formData
-            }).then(res => res.json()).then(data => {
-                if(data.success) {
-                    inputField.value = '';
-                    const newHtml = `
-                        <div class="d-flex mb-3">
-                            <div class="bg-secondary text-white rounded-circle d-flex justify-content-center align-items-center me-2 mt-1" style="width: 32px; height: 32px; font-size: 0.8rem;">${data.author_initial}</div>
-                            <div class="bg-light rounded p-2 px-3 w-100 border">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <span class="fw-bold small text-dark">${data.author}</span>
-                                    <span class="text-muted" style="font-size: 0.75rem;">${data.date}</span>
-                                </div>
-                                <p class="mb-0 small text-break">${data.text}</p>
-                            </div>
-                        </div>`;
-                    this.closest('.comments-section').querySelector('.comments-list').insertAdjacentHTML('beforeend', newHtml);
-                    this.closest('.card-footer').querySelector('.comments-count-badge').textContent = data.comments_count;
-                }
-            }).catch(err => console.error(err)).finally(() => submitBtn.disabled = false);
-        });
-    });
-});
-</script>
 {% endblock %}

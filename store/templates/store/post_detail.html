@@ -1,0 +1,216 @@
+{% extends 'store/base.html' %}
+{% block title %}Публикация - {{ post.pet.name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4 mb-5">
+    <div class="col-lg-10">
+        <a href="{% url 'store:pet_detail' post.pet.id %}" class="btn btn-sm btn-outline-secondary mb-3 fw-bold">
+            ← Назад к {{ post.pet.name }}
+        </a>
+
+        <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="row g-0">
+                
+                <div class="col-md-7 bg-dark d-flex align-items-center justify-content-center position-relative" style="min-height: 500px;">
+                    {% if post.images.all %}
+                        <div id="carouselPostDetail{{ post.id }}" class="carousel slide w-100" data-bs-ride="carousel">
+                            <div class="carousel-indicators">
+                                {% for img in post.images.all %}
+                                    <button type="button" data-bs-target="#carouselPostDetail{{ post.id }}" data-bs-slide-to="{{ forloop.counter0 }}" class="{% if forloop.first %}active{% endif %}"></button>
+                                {% endfor %}
+                            </div>
+
+                            <div class="carousel-inner">
+                                {% for img in post.images.all %}
+                                    <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                                        <img src="{{ img.image.url }}" class="d-block w-100" style="max-height: 80vh; object-fit: contain;" alt="Фото поста">
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                            {% if post.images.count > 1 %}
+                                <button class="carousel-control-prev" type="button" data-bs-target="#carouselPostDetail{{ post.id }}" data-bs-slide="prev">
+                                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                </button>
+                                <button class="carousel-control-next" type="button" data-bs-target="#carouselPostDetail{{ post.id }}" data-bs-slide="next">
+                                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                </button>
+                            {% endif %}
+                        </div>
+                    {% elif post.image %}
+                        <img src="{{ post.image.url }}" class="img-fluid w-100" style="max-height: 80vh; object-fit: contain;" alt="Фото">
+                    {% else %}
+                        <div class="p-5 text-white text-center fs-4 fw-bold">
+                            {{ post.text }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-5 d-flex flex-column bg-white" style="max-height: 80vh;">
+
+                    <div class="p-3 border-bottom d-flex align-items-center bg-light">
+                        {% if post.pet.images.all %}
+                            <img src="{{ post.pet.images.first.image.url }}" class="rounded-circle me-3 shadow-sm" style="width: 45px; height: 45px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-secondary rounded-circle text-white d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 45px; height: 45px;">🐾</div>
+                        {% endif %}
+                        <div>
+                            <h6 class="mb-0 fw-bold">
+                                <a href="{% url 'store:pet_detail' post.pet.id %}" class="text-decoration-none text-dark">{{ post.pet.name }}</a>
+                            </h6>
+                            <small class="text-muted">Владелец: @{{ post.author.username }}</small>
+                        </div>
+                    </div>
+
+                    <div class="p-3 flex-grow-1 overflow-auto">
+                        {% if post.image or post.images.all %}
+                            {% if post.text %}
+                                <div class="mb-3 d-flex">
+                                    <strong class="me-2">@{{ post.author.username }}</strong>
+                                    <span style="white-space: pre-line;">{{ post.text }}</span>
+                                </div>
+                                <div class="text-muted small mb-3 border-bottom pb-3">{{ post.created_at|date:"d M Y, H:i" }}</div>
+                            {% endif %}
+                        {% endif %}
+
+                        <div class="comments-list">
+                            {% for comment in comments %}
+                                <div class="d-flex mb-3">
+                                    <div class="bg-secondary text-white rounded-circle d-flex justify-content-center align-items-center me-2 mt-1" style="width: 32px; height: 32px; font-size: 0.8rem; flex-shrink: 0;">
+                                        {{ comment.author.username|make_list|first|upper }}
+                                    </div>
+                                    <div class="bg-light rounded p-2 px-3 w-100 border">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="fw-bold small text-dark">@{{ comment.author.username }}</span>
+                                            <span class="text-muted" style="font-size: 0.75rem;">{{ comment.created_at|date:"d.m.Y H:i" }}</span>
+                                        </div>
+                                        <p class="mb-0 small text-break">{{ comment.text }}</p>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <p class="text-muted small text-center mt-4 no-comments-text">Пока нет комментариев. Будьте первым!</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="p-3 border-top bg-white card-footer border-top-0">
+                        <div class="mb-2 d-flex align-items-center">
+                            <button class="btn btn-link text-decoration-none p-0 border-0 fs-3 transition-scale like-btn" data-url="{% url 'store:toggle_like' post.id %}" style="line-height: 1;">
+                                <span class="like-icon">{% if request.user in post.likes.all %}❤️{% else %}🤍{% endif %}</span>
+                            </button>
+                            <span class="fw-bold ms-2"><span class="like-count">{{ post.likes.count }}</span> отметок "Нравится"</span>
+                        </div>
+
+                        {% if request.user.is_authenticated %}
+                            <form action="{% url 'store:post_detail' post.id %}" method="post" class="mt-3 ajax-comment-form">
+                                {% csrf_token %}
+                                <div class="input-group">
+                                    <input type="text" name="text" class="form-control form-control-sm me-2 bg-light border-0" placeholder="Написать комментарий..." required>
+                                    <button type="submit" class="btn btn-sm btn-outline-primary fw-bold px-3">Отправить</button>
+                                </div>
+                            </form>
+                        {% else %}
+                            <div class="alert alert-secondary small p-2 mb-0 mt-2 text-center">
+                                <a href="{% url 'login' %}" class="fw-bold text-decoration-none">Войдите</a>, чтобы оставить комментарий.
+                            </div>
+                        {% endif %}
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const getCsrfToken = () => document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    // AJAX-лайки
+    document.querySelectorAll('.like-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const url = this.dataset.url;
+            const iconSpan = this.querySelector('.like-icon');
+            const countSpan = this.closest('.card-footer').querySelector('.like-count');
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                iconSpan.innerHTML = data.liked ? '❤️' : '🤍';
+                countSpan.textContent = data.likes_count;
+            })
+            .catch(err => console.error(err));
+        });
+    });
+
+    // AJAX-комментарии
+    const commentForm = document.querySelector('.ajax-comment-form');
+    if (commentForm) {
+        commentForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const url = this.action;
+            const inputField = this.querySelector('input[name="text"]');
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const commentsList = document.querySelector('.comments-list');
+            const noCommentsText = document.querySelector('.no-comments-text');
+
+            submitBtn.disabled = true;
+            const formData = new URLSearchParams();
+            formData.append('text', inputField.value);
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                // Если вьюшка вернула флаг успеха или сгенерировала JSON напрямую
+                if(data.success || data.author) {
+                    if (noCommentsText) noCommentsText.remove(); // Удаляем надпись "Будьте первым"
+
+                    const authorName = data.author ? data.author : "{{ request.user.username }}";
+                    const initial = data.author_initial ? data.author_initial : authorName.charAt(0).toUpperCase();
+                    const dateStr = data.date ? data.date : "Только что";
+                    const commentText = data.text ? data.text : inputField.value;
+
+                    const newHtml = `
+                        <div class="d-flex mb-3">
+                            <div class="bg-secondary text-white rounded-circle d-flex justify-content-center align-items-center me-2 mt-1" style="width: 32px; height: 32px; font-size: 0.8rem; flex-shrink: 0;">${initial}</div>
+                            <div class="bg-light rounded p-2 px-3 w-100 border">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-bold small text-dark">@${authorName}</span>
+                                    <span class="text-muted" style="font-size: 0.75rem;">${dateStr}</span>
+                                </div>
+                                <p class="mb-0 small text-break">${commentText}</p>
+                            </div>
+                        </div>`;
+
+                    commentsList.insertAdjacentHTML('beforeend', newHtml);
+                    inputField.value = '';
+                } else {
+                    // Перезагрузка на случай, если вьюшка отдает стандартный HTML редирект
+                    window.location.reload();
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                window.location.reload(); // Фолбэк при ошибках
+            })
+            .finally(() => submitBtn.disabled = false);
+        });
+    }
+});
+</script>
+{% endblock %}

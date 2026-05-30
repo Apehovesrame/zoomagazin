@@ -40,6 +40,8 @@ urlpatterns = [
     path('community/edit/<int:post_id>/', views.edit_post, name='edit_post'),
     path('community/delete/<int:post_id>/', views.delete_post, name='delete_post'),
 
+    path('pet-image/<int:image_id>/like/', views.like_pet_image, name='like_pet_image'),
+    path('pet-image/<int:image_id>/comment/', views.add_pet_image_comment, name='add_pet_image_comment'),
     path('pet/<int:pet_id>/', views.pet_detail, name='pet_detail'),
     path('pet/image/<int:image_id>/delete/', views.delete_pet_image, name='delete_pet_image'),
     path('pet/<int:pet_id>/delete/', views.delete_pet, name='delete_pet'),

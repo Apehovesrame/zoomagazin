@@ -133,4 +133,19 @@
         </div>
     </div>
 </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Проверяем, есть ли в URL хэш (например, #gallery)
+        let hash = window.location.hash;
+        if (hash) {
+            // Находим кнопку вкладки, которая соответствует этому хэшу
+            let tabButton = document.querySelector(`button[data-bs-target="${hash}"]`);
+            if (tabButton) {
+                // Заставляем Bootstrap принудительно открыть эту вкладку
+                let tab = new bootstrap.Tab(tabButton);
+                tab.show();
+            }
+        }
+    });
+</script>
 {% endblock %}

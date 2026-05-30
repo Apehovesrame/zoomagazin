@@ -175,7 +175,7 @@ class Post(models.Model):
     author = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='posts', verbose_name='Автор')
 
     # Необязательная, но крутая фишка: привязка поста к конкретному питомцу
-    pet = models.ForeignKey(Pet, on_delete=models.SET_NULL, null=True, blank=True, related_name='posts',
+    pet = models.ForeignKey(Pet, on_delete=models.CASCADE, null=True, blank=True, related_name='posts',
                             verbose_name='Питомец (опционально)')
 
     image = models.ImageField('Фотография', upload_to='community/', blank=True, null=True)
@@ -233,7 +233,6 @@ class Review(models.Model):
 
 
 class ImageGallery(models.Model):
-    # Эта модель может быть связана с чем угодно
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='images', null=True, blank=True)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images', null=True, blank=True)
     pet = models.ForeignKey(Pet, on_delete=models.CASCADE, related_name='images', null=True, blank=True)
@@ -241,6 +240,39 @@ class ImageGallery(models.Model):
     image = models.ImageField('Фото', upload_to='gallery/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
+    # НОВОЕ ПОЛЕ: Лайки к конкретной фотографии в галерее
+    likes = models.ManyToManyField(CustomUser, related_name='liked_gallery_images', blank=True, verbose_name='Лайки')
+
     class Meta:
         verbose_name = 'Фото из галереи'
         verbose_name_plural = 'Галерея'
+
+    def __str__(self):
+        if self.pet:
+            return f"Фото питомца {self.pet.name} (№{self.id})"
+        elif self.post:
+            return f"Фото к посту №{self.post.id}"
+        return f"Фото №{self.id}"
+
+    # Метод для удобного подсчета лайков картинки в шаблоне
+    def total_likes(self):
+        return self.likes.count()
+
+
+# 2. Добавляем абсолютно НОВУЮ модель для комментариев к фотографиям из галереи:
+
+class GalleryImageComment(models.Model):
+    image = models.ForeignKey(ImageGallery, on_delete=models.CASCADE, related_name='gallery_comments',
+                              verbose_name='Фотография')
+    author = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='gallery_comments',
+                               verbose_name='Автор')
+    text = models.TextField('Комментарий', max_length=500)
+    created_at = models.DateTimeField('Дата написания', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Комментарий к фото галереи'
+        verbose_name_plural = 'Комментарии к фото галереи'
+        ordering = ['-created_at']  # Свежие комментарии будут отображаться вверху списка
+
+    def __str__(self):
+        return f"Комментарий от {self.author.username} к фото №{self.image.id}"

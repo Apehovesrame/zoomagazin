@@ -553,21 +553,25 @@ def edit_pet(request, pet_id):
     return render(request, 'store/edit_pet.html', {'form': form, 'pet': pet})
 
 
-@login_required
 def pet_detail(request, pet_id):
-    # Получаем питомца
+    """Детальная страница питомца с вкладками 'Посты' и 'Галерея'"""
     pet = get_object_or_404(Pet, id=pet_id)
 
-    # Получаем только посты ЭТОГО питомца
+    # Получаем только посты этого питомца с оптимизацией запросов
     posts = Post.objects.filter(pet=pet).select_related('author', 'pet').prefetch_related('tags', 'likes').annotate(
         num_likes=Count('likes', distinct=True),
         num_comments=Count('comments', distinct=True)
     ).order_by('-created_at')
 
-    return render(request, 'store/pet_detail.html', {
+    # Импортируем нашу новую форму для комментов к фото
+    from .forms import GalleryImageCommentForm
+
+    context = {
         'pet': pet,
         'posts': posts,
-    })
+        'comment_form': GalleryImageCommentForm(),  # Передаем форму в модальные окна галереи
+    }
+    return render(request, 'store/pet_detail.html', context)
 
 @login_required
 def smart_catalog(request, pet_id):
@@ -1133,6 +1137,48 @@ def bulk_delete_orders(request):
 
     # Возвращаемся обратно на страницу заказов, сразу открыв вкладку архива (через хэш #archivedOrders)
     return redirect(reverse('store:manager_orders') + '#archivedOrders')
+
+
+@login_required
+@require_POST
+def like_pet_image(request, image_id):
+    """Поставить/убрать лайк на фотографию из галереи питомца"""
+    image = get_object_or_404(ImageGallery, id=image_id)
+
+    # Механика переключателя (Toggle): если лайк есть — удаляем, если нет — добавляем
+    if image.likes.filter(id=request.user.id).exists():
+        image.likes.remove(request.user)
+    else:
+        image.likes.add(request.user)
+
+    # Проверяем, что картинка точно привязана к питомцу (чтобы не было ошибок на сервере)
+    if image.pet:
+        # Возвращаем пользователя на страницу питомца и ЯВНО указываем хэш #gallery
+        return redirect(reverse('store:pet_detail', args=[image.pet.id]) + '#gallery')
+
+    # Если это просто фото из общего поста, возвращаем в ленту
+    return redirect('store:community')
+
+
+@login_required
+@require_POST
+def add_pet_image_comment(request, image_id):
+    """Добавление нового комментария к фотографии из галереи питомца"""
+    image = get_object_or_404(ImageGallery, id=image_id)
+    from .forms import GalleryImageCommentForm
+
+    form = GalleryImageCommentForm(request.POST)
+    if form.is_valid():
+        comment = form.save(commit=False)
+        comment.author = request.user  # Привязываем автора комментария
+        comment.image = image  # Привязываем к конкретной фотографии
+        comment.save()
+        messages.success(request, 'Ваш комментарий к фотографии успешно добавлен!')
+    else:
+        messages.error(request, 'Не удалось отправить комментарий. Проверьте текст.')
+
+    # Возвращаем пользователя обратно на вкладку галереи
+    return redirect(reverse('store:pet_detail', args=[image.pet.id]) + '#gallery')
 
 @user_passes_test(is_store_admin, login_url='store:index')
 def manager_report(request):

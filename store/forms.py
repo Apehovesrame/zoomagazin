@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import CustomUser
+from .models import CustomUser, GalleryImageComment
 from .models import Order
 from .models import Product, OrderItem, Pet, Post, Comment, Review
 from django.contrib.auth.models import User
@@ -269,3 +269,19 @@ class OrderCancelForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Делаем выбор причины обязательным
         self.fields['cancel_reason'].required = True
+
+
+class GalleryImageCommentForm(forms.ModelForm):
+    class Meta:
+        model = GalleryImageComment
+        fields = ['text']
+        widgets = {
+            'text': forms.Textarea(attrs={
+                'class': 'form-control form-control-sm bg-light',
+                'rows': 2,
+                'placeholder': 'Напишите комментарий к этой фотографии...'
+            }),
+        }
+    labels = {
+        'text': ''  # Убираем стандартную джанговскую метку, чтобы не дублировать UI
+    }
